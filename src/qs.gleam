@@ -232,6 +232,17 @@ pub fn push(query: Query, key: String, value: String) {
 	)
 }
 
+/// Merge two Querys.
+/// If there are entries with the same keys in both maps the entry from the second query takes precedence.
+pub fn merge(a: Query, b: Query) {
+	map.merge(a, b)
+}
+
+/// Delete a key from the query
+pub fn delete(query: Query, key: String) {
+	map.delete(query, key)
+}
+
 fn to_list(one_or_many: OneOrMany) -> List(String) {
 	case one_or_many {
 		One(value) ->
