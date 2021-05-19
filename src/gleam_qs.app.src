@@ -9,7 +9,7 @@
    ]},
   {env,[]},
   {modules, []},
-  {license, "mit"},
+  {licenses,["MIT"]},
   {include_files, ["gleam.toml", "gen"]},
   {links, []}
 ]}.
