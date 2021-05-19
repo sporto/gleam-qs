@@ -136,21 +136,20 @@ fn serialize_key(
 
 	case one_or_many {
 		One(value) ->
-			[ join_key_value(key, value) ]
+			[ join_key_value(key, value, "=") ]
 
 		Many(values) -> {
-			let key_list = string.append(key, "[]")
-
 			values
-			|> list.map(join_key_value(key_list, _))
+			|> list.map(join_key_value(key, _, "[]="))
 		}
 	}
 }
 
-fn join_key_value(key: String, value: String) -> String {
+fn join_key_value(key: String, value: String, join: String) -> String {
 	key
-	|> string.append("=")
-	|> string.append(value)
+	|> uri.percent_encode
+	|> string.append(join)
+	|> string.append(value |> uri.percent_encode)
 }
 
 fn add_question_mark(query: String) -> String {

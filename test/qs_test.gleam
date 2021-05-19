@@ -90,3 +90,12 @@ pub fn serialize_test() {
 		"?a=1&b[]=2&b[]=3"
 	)
 }
+
+pub fn encode_when_serializing_test() {
+	test_serialize(
+		[
+			#("a", One("100% great")),
+		],
+		"?a=100%25+great"
+	)
+}
