@@ -1,16 +1,30 @@
 # gleam_qs
 
-A Gleam project
+A query string parser for Gleam. Based on https://github.com/ljharb/qs
 
-## Quick start
+QS uses `[]` for lists.
 
-```sh
-# Run the eunit tests
-rebar3 eunit
+E.g.
 
-# Run the Erlang REPL
-rebar3 shell
 ```
+?ids[]=1&ids[]=2
+```
+
+## Parse
+
+```
+import qs
+import gleam/map
+
+"?color=red&tags[]=large&tags[]=wool"
+|> qs.parse
+
+> Ok([ #("color", qs.One("red)), #("tags", qs.Many(["large", "wool"])) ] |> map.from_list)
+```
+
+## Serialize
+
+TODO
 
 ## Installation
 
