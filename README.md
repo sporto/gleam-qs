@@ -29,10 +29,10 @@ import qs
 import gleam/map
 
 let query = [
-	#("a", One("1")),
-	#("b", Many(["2", "3"]))
-	]
-    |> map.from_list
+    #("a", One("1")),
+    #("b", Many(["2", "3"]))
+  ]
+  |> map.from_list
 
 qs.serialize(query)
 
