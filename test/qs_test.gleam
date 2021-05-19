@@ -99,3 +99,15 @@ pub fn encode_when_serializing_test() {
 		"?a=100%25+great"
 	)
 }
+
+pub fn get_as_list_test() {
+	[ #("a", One("1")) ]
+	|> map.from_list
+	|> qs.get_as_list("a")
+	|> should.equal(["1"])
+
+	[ #("a", Many(["1", "2"])) ]
+	|> map.from_list
+	|> qs.get_as_list("a")
+	|> should.equal(["1", "2"])
+}

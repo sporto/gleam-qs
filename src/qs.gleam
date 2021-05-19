@@ -107,10 +107,6 @@ fn reverse_many(_k: String, v: OneOrMany) -> OneOrMany {
 
 }
 
-pub fn empty() -> Query {
-	map.new()
-}
-
 /// Serialize a query
 ///
 /// ## Example
@@ -154,4 +150,40 @@ fn join_key_value(key: String, value: String, join: String) -> String {
 
 fn add_question_mark(query: String) -> String {
 	"?" |> string.append(query)
+}
+
+/// Make an empty Query
+pub fn empty() -> Query {
+	map.new()
+}
+
+/// Get values from the query
+pub fn get(
+		query: Query, key: String
+	) -> Result(OneOrMany, String) {
+
+	let error = "Invalid key " |> string.append(key)
+
+	map.get(query, key)
+	|> result.replace_error(error)
+}
+
+/// Get values from the query as a list of strings (regardless if one or many).
+/// If keys are not present this defaults to an empty list
+pub fn get_as_list(
+		query: Query, key: String
+	) {
+
+	get(query, key)
+	|> result.map(to_list)
+	|> result.unwrap([])
+}
+
+fn to_list(one_or_many: OneOrMany) -> List(String) {
+	case one_or_many {
+		One(value) ->
+			[ value ]
+		Many(values) ->
+			values
+	}
 }
