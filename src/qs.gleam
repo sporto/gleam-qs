@@ -159,13 +159,31 @@ pub fn empty() -> Query {
 
 /// Get values from the query
 pub fn get(
-		query: Query, key: String
+		query: Query,
+		key: String
 	) -> Result(OneOrMany, String) {
 
 	let error = "Invalid key " |> string.append(key)
 
 	map.get(query, key)
 	|> result.replace_error(error)
+}
+
+/// Attempt to get one value as a string
+/// If the value is a list this will fail
+pub fn get_as_string(
+		query: Query,
+		key: String
+	) -> Result(String, String) {
+
+	try one_or_many = get(query, key)
+
+	case one_or_many {
+		One(value) ->
+			Ok(value)
+		Many(_) ->
+			Error(key |> string.append(" is a list"))
+	}
 }
 
 /// Get values from the query as a list of strings (regardless if one or many).

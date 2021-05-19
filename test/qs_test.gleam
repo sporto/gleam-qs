@@ -100,6 +100,23 @@ pub fn encode_when_serializing_test() {
 	)
 }
 
+pub fn get_as_string_test() {
+	[  ]
+	|> map.from_list
+	|> qs.get_as_string("a")
+	|> should.equal(Error("Invalid key a"))
+
+	[ #("a", One("1")) ]
+	|> map.from_list
+	|> qs.get_as_string("a")
+	|> should.equal(Ok("1"))
+
+	[ #("a", Many([])) ]
+	|> map.from_list
+	|> qs.get_as_string("a")
+	|> should.equal(Error("a is a list"))
+}
+
 pub fn get_as_list_test() {
 	[ #("a", One("1")) ]
 	|> map.from_list
