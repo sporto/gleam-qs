@@ -30,6 +30,17 @@ pub fn parse_key_value(segment: String) -> Result(#(String, String, Bool), Strin
 	|> result.replace_error("Unable to parse " |> string.append(segment))
 }
 
+///Parse a query string
+///
+/// ## Example
+///
+/// ```
+/// "?color=red&tags[]=large&tags[]=wool"
+/// |> qs.parse
+///
+/// > Ok([ #("color", qs.One("red")), #("tags", qs.Many(["large", "wool"])) ] |> map.from_list)
+/// ```
+///
 pub fn parse(qs: String) -> Result(Query, String) {
 	try segments = qs
 	|> string.replace("?", "")
@@ -100,6 +111,14 @@ pub fn empty() -> Query {
 	map.new()
 }
 
+/// Serialize a query
+///
+/// ## Example
+///
+/// ```
+/// [ #("color", qs.One("red")), #("tags", qs.Many(["large", "wool"])) ] |> qs.serialize
+/// > "?color=red&tags[]=large&tags[]=wool"
+/// ```
 pub fn serialize(query: Query) -> String {
 	query
 	|> map.to_list
