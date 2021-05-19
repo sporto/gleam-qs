@@ -117,6 +117,13 @@ pub fn get_as_string_test() {
 	|> should.equal(Error("a is a list"))
 }
 
+pub fn get_as_bool_test() {
+	[ #("a", One("true")) ]
+	|> map.from_list
+	|> qs.get_as_bool("a")
+	|> should.equal(Ok(True))
+}
+
 pub fn get_as_list_test() {
 	[ #("a", One("1")) ]
 	|> map.from_list

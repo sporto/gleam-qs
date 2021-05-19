@@ -186,6 +186,17 @@ pub fn get_as_string(
 	}
 }
 
+/// Attempt to get one value as a boolean
+/// If the value is a list this will fail
+pub fn get_as_bool(
+		query: Query,
+		key: String
+	) -> Result(Bool, String) {
+
+	get_as_string(query, key)
+	|> result.then(parse_bool)
+}
+
 /// Get values from the query as a list of strings (regardless if one or many).
 /// If keys are not present this defaults to an empty list
 pub fn get_as_list(
@@ -259,6 +270,14 @@ pub fn merge(a: Query, b: Query) {
 /// Delete a key from the query
 pub fn delete(query: Query, key: String) {
 	map.delete(query, key)
+}
+
+fn parse_bool(s: String) -> Result(Bool, String) {
+	case s {
+		"true" -> Ok(True)
+		"false" -> Ok(False)
+		_ -> Error("Invalid " |> string.append(s))
+	}
 }
 
 fn to_list(one_or_many: OneOrMany) -> List(String) {
