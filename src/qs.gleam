@@ -1,3 +1,4 @@
+import gleam/int
 import gleam/list
 import gleam/map.{Map}
 import gleam/result
@@ -186,7 +187,7 @@ pub fn get_as_string(
 	}
 }
 
-/// Attempt to get one value as a boolean
+/// Attempt to get one value as a Bool
 /// If the value is a list this will fail
 pub fn get_as_bool(
 		query: Query,
@@ -196,6 +197,21 @@ pub fn get_as_bool(
 	get_as_string(query, key)
 	|> result.then(parse_bool)
 }
+
+/// Attempt to get one value as an Int
+/// If the value is a list this will fail
+pub fn get_as_int(
+		query: Query,
+		key: String
+	) -> Result(Int, String) {
+
+	try value = get_as_string(query, key)
+
+	value
+	|> int.parse
+	|> result.replace_error("Invalid Int " |> string.append(value))
+}
+
 
 /// Get values from the query as a list of strings (regardless if one or many).
 /// If keys are not present this defaults to an empty list

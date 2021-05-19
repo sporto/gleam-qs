@@ -124,6 +124,13 @@ pub fn get_as_bool_test() {
 	|> should.equal(Ok(True))
 }
 
+pub fn get_as_int_test() {
+	[ #("a", One("2")) ]
+	|> map.from_list
+	|> qs.get_as_int("a")
+	|> should.equal(Ok(2))
+}
+
 pub fn get_as_list_test() {
 	[ #("a", One("1")) ]
 	|> map.from_list
