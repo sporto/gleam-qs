@@ -111,3 +111,23 @@ pub fn get_as_list_test() {
 	|> qs.get_as_list("a")
 	|> should.equal(["1", "2"])
 }
+
+pub fn push_test() {
+	[ ]
+	|> map.from_list
+	|> qs.push("a", "1")
+	|> map.to_list
+	|> should.equal([ #("a", Many(["1"])) ])
+
+	[ #("a", One("1")) ]
+	|> map.from_list
+	|> qs.push("a", "2")
+	|> map.to_list
+	|> should.equal([ #("a", Many(["1", "2"])) ])
+
+	[ #("a", Many(["1"])) ]
+	|> map.from_list
+	|> qs.push("a", "2")
+	|> map.to_list
+	|> should.equal([ #("a", Many(["1", "2"])) ])
+}

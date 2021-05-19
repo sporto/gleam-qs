@@ -187,6 +187,51 @@ pub fn maybe_get_as_list(
 	|> result.map(to_list)
 }
 
+/// Tell if the query has the given key
+pub fn has_key(query: Query, key: String) -> Bool {
+	map.has_key(query, key)
+}
+
+/// Insert a value in the query
+pub fn insert(query: Query, key: String, value: OneOrMany) {
+	map.insert(query, key, value)
+}
+
+/// Set a unique value in the query
+pub fn insert_one(query: Query, key: String, value: String) {
+	insert(query, key, One(value))
+}
+
+/// Set a list of values in the query
+pub fn insert_list(query: Query, key: String, values: List(String)) {
+	insert(query, key, Many(values))
+}
+
+/// Adds one value to a list
+/// If the key is not a list then it will be promoted to a list
+/// If the key doesn't exist then it will be added as a list of one item
+pub fn push(query: Query, key: String, value: String) {
+	map.update(
+		in: query,
+		update: key,
+		with: fn(res) {
+			case res {
+				Ok(current) ->
+					case current {
+						One(one) ->
+							Many([one, value])
+
+						Many(many) ->
+							Many(list.append(many, [value]))
+					}
+
+				Error(_) ->
+					Many([value])
+			}
+		}
+	)
+}
+
 fn to_list(one_or_many: OneOrMany) -> List(String) {
 	case one_or_many {
 		One(value) ->
