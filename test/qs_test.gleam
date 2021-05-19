@@ -73,4 +73,20 @@ pub fn serialize_test() {
 		[ #("a", One("1")) ],
 		"?a=1"
 	)
+
+	test_serialize(
+		[
+			#("a", One("1")),
+			#("b", One("2"))
+		],
+		"?a=1&b=2"
+	)
+
+	test_serialize(
+		[
+			#("a", One("1")),
+			#("b", Many(["2", "3"]))
+		],
+		"?a=1&b[]=2&b[]=3"
+	)
 }

@@ -85,7 +85,7 @@ fn add_segment(segment: #(String, String, Bool), query: Query) -> Query {
 	)
 }
 
-fn reverse_many(k: String, v: OneOrMany) -> OneOrMany {
+fn reverse_many(_k: String, v: OneOrMany) -> OneOrMany {
 	case v {
 		Many(values) ->
 			Many(list.reverse(values))
@@ -119,9 +119,12 @@ fn serialize_key(
 		One(value) ->
 			[ join_key_value(key, value) ]
 
-		Many(values) ->
+		Many(values) -> {
+			let key_list = string.append(key, "[]")
+
 			values
-			|> list.map(join_key_value(key, _))
+			|> list.map(join_key_value(key_list, _))
+		}
 	}
 }
 
