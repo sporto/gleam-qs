@@ -172,11 +172,19 @@ pub fn get(
 /// If keys are not present this defaults to an empty list
 pub fn get_as_list(
 		query: Query, key: String
-	) {
+	) -> List(String) {
+
+	maybe_get_as_list(query, key)
+	|> result.unwrap([])
+}
+
+// Get values from the query as a list of strings. If key is not present this returns an Error.
+pub fn maybe_get_as_list(
+		query: Query, key: String
+	) -> Result(List(String), String) {
 
 	get(query, key)
 	|> result.map(to_list)
-	|> result.unwrap([])
 }
 
 fn to_list(one_or_many: OneOrMany) -> List(String) {
