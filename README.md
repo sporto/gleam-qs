@@ -29,8 +29,8 @@ import qs
 import gleam/map
 
 let query = [
-    #("a", One("1")),
-    #("b", Many(["2", "3"]))
+    #("a", qs.One("1")),
+    #("b", qs.Many(["2", "3"]))
   ]
   |> map.from_list
 
