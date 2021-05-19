@@ -19,7 +19,7 @@ import gleam/map
 "?color=red&tags[]=large&tags[]=wool"
 |> qs.parse
 
-> Ok([ #("color", qs.One("red)), #("tags", qs.Many(["large", "wool"])) ] |> map.from_list)
+> Ok([ #("color", qs.One("red")), #("tags", qs.Many(["large", "wool"])) ] |> map.from_list)
 ```
 
 ## Serialize
