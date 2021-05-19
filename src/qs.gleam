@@ -1,3 +1,4 @@
+import gleam/float
 import gleam/int
 import gleam/list
 import gleam/map.{Map}
@@ -212,15 +213,65 @@ pub fn get_as_int(
 	|> result.replace_error("Invalid Int " |> string.append(value))
 }
 
+/// Attempt to get one value as an Float
+/// If the value is a list this will fail
+pub fn get_as_float(
+		query: Query,
+		key: String
+	) -> Result(Float, String) {
+
+	try value = get_as_string(query, key)
+
+	value
+	|> float.parse
+	|> result.replace_error("Invalid Float " |> string.append(value))
+}
+
 
 /// Get values from the query as a list of strings (regardless if one or many).
 /// If keys are not present this defaults to an empty list
 pub fn get_as_list(
-		query: Query, key: String
+		query: Query,
+		key: String
 	) -> List(String) {
 
 	maybe_get_as_list(query, key)
 	|> result.unwrap([])
+}
+
+/// Attempt to get values as a list of Bool
+pub fn get_as_list_of_bool(
+		query: Query,
+		key: String
+	) -> Result(List(Bool), String) {
+
+	get_as_list(query, key)
+	|> list.map(parse_bool)
+	|> result.all
+}
+
+/// Attempt to get values as a list of Int
+pub fn get_as_list_of_int(
+		query: Query,
+		key: String
+	) -> Result(List(Int), String) {
+
+	get_as_list(query, key)
+	|> list.map(int.parse)
+	|> result.all
+	|> result.replace_error("Couldn't parse all values")
+}
+
+/// Attempt to get values as a list of Float
+pub fn get_as_list_of_float(
+		query: Query,
+		key: String
+	) -> Result(List(Float), String) {
+
+	get_as_list(query, key)
+	|> list.map(float.parse)
+	|> result.all
+	|> result.replace_error("Couldn't parse all values")
 }
 
 // Get values from the query as a list of strings. If key is not present this returns an Error.

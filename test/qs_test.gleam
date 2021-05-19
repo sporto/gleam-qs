@@ -131,6 +131,13 @@ pub fn get_as_int_test() {
 	|> should.equal(Ok(2))
 }
 
+pub fn get_as_float_test() {
+	[ #("a", One("2.1")) ]
+	|> map.from_list
+	|> qs.get_as_float("a")
+	|> should.equal(Ok(2.1))
+}
+
 pub fn get_as_list_test() {
 	[ #("a", One("1")) ]
 	|> map.from_list
@@ -141,6 +148,27 @@ pub fn get_as_list_test() {
 	|> map.from_list
 	|> qs.get_as_list("a")
 	|> should.equal(["1", "2"])
+}
+
+pub fn get_as_list_of_bool_test() {
+	[ #("a", One("true")) ]
+	|> map.from_list
+	|> qs.get_as_list_of_bool("a")
+	|> should.equal(Ok([True]))
+}
+
+pub fn get_as_list_of_int_test() {
+	[ #("a", One("1")) ]
+	|> map.from_list
+	|> qs.get_as_list_of_int("a")
+	|> should.equal(Ok([1]))
+}
+
+pub fn get_as_list_of_float_test() {
+	[ #("a", One("1.1")) ]
+	|> map.from_list
+	|> qs.get_as_list_of_float("a")
+	|> should.equal(Ok([1.1]))
 }
 
 pub fn push_test() {
