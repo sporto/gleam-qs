@@ -24,7 +24,20 @@ import gleam/map
 
 ## Serialize
 
-TODO
+```
+import qs
+import gleam/map
+
+let query = [
+	#("a", One("1")),
+	#("b", Many(["2", "3"]))
+	]
+    |> map.from_list
+
+qs.serialize(query)
+
+> "?a=1&b[]=2&b[]=3"
+```
 
 ## Installation
 
