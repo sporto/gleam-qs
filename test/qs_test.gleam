@@ -48,8 +48,15 @@ pub fn parse_test() {
 	)
 
 	// A list value gets replaced with a single value
-		test_parse_ok(
+	test_parse_ok(
 		"?a[]=1&a=2",
 		[ #("a", One("2")) ]
+	)
+}
+
+pub fn decode_when_parsing_test() {
+	test_parse_ok(
+		"?a=100%25+great",
+		[ #("a", One("100% great")) ]
 	)
 }

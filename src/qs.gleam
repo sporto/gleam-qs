@@ -2,6 +2,7 @@ import gleam/list
 import gleam/map.{Map}
 import gleam/result
 import gleam/string
+import gleam/uri
 
 pub type OneOrMany {
 	One(String)
@@ -12,7 +13,10 @@ pub type Query =
 	Map(String, OneOrMany)
 
 pub fn parse_key_value(segment: String) -> Result(#(String, String, Bool), String) {
-	string.split_once(segment, on: "=")
+	segment
+	|> uri.percent_decode
+	|> result.unwrap(segment)
+	|> string.split_once(on: "=")
 	|> result.map(fn(pair) {
 		let #(k, v) = pair
 		case string.ends_with(k, "[]") {
