@@ -60,3 +60,17 @@ pub fn decode_when_parsing_test() {
 		[ #("a", One("100% great")) ]
 	)
 }
+
+fn test_serialize(input, expected) {
+	input
+	|> map.from_list
+	|> qs.serialize
+	|> should.equal(expected)
+}
+
+pub fn serialize_test() {
+	test_serialize(
+		[ #("a", One("1")) ],
+		"?a=1"
+	)
+}

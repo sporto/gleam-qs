@@ -99,3 +99,38 @@ fn reverse_many(k: String, v: OneOrMany) -> OneOrMany {
 pub fn empty() -> Query {
 	map.new()
 }
+
+pub fn serialize(query: Query) -> String {
+	query
+	|> map.to_list
+	|> list.map(serialize_key)
+	|> list.flatten
+	|> string.join("&")
+	|> add_question_mark
+}
+
+fn serialize_key(
+		input: #(String, OneOrMany)
+	) -> List(String) {
+
+	let #(key, one_or_many) = input
+
+	case one_or_many {
+		One(value) ->
+			[ join_key_value(key, value) ]
+
+		Many(values) ->
+			values
+			|> list.map(join_key_value(key, _))
+	}
+}
+
+fn join_key_value(key: String, value: String) -> String {
+	key
+	|> string.append("=")
+	|> string.append(value)
+}
+
+fn add_question_mark(query: String) -> String {
+	"?" |> string.append(query)
+}
