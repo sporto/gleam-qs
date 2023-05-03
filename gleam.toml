@@ -1,3 +1,4 @@
 name = "gleam_qs"
+dependencies = { gleam_stdlib = "~> 0.28", gleeunit = "~> 0.10"}
 
 # repository = { type = "github", user = "my-user", repo = "gleam_qs" }
