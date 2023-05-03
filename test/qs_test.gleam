@@ -41,7 +41,7 @@ pub fn parse_test() {
 }
 
 pub fn decode_when_parsing_test() {
-  test_parse_ok("?a=100%25+great", [#("a", One("100% great"))])
+  test_parse_ok("?a=100%25%20great", [#("a", One("100% great"))])
 }
 
 fn test_serialize(input, expected) {
@@ -63,7 +63,7 @@ pub fn serialize_test() {
 }
 
 pub fn encode_when_serializing_test() {
-  test_serialize([#("a", One("100% great"))], "?a=100%25+great")
+  test_serialize([#("a", One("100% great"))], "?a=100%25%20great")
 }
 
 pub fn get_as_string_test() {
