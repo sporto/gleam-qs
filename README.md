@@ -14,25 +14,25 @@ E.g.
 
 ```
 import qs
-import gleam/map
+import gleam/dict
 
 "?color=red&tags[]=large&tags[]=wool"
 |> qs.parse
 
-> Ok([ #("color", qs.One("red")), #("tags", qs.Many(["large", "wool"])) ] |> map.from_list)
+> Ok([ #("color", qs.One("red")), #("tags", qs.Many(["large", "wool"])) ] |> dict.from_list)
 ```
 
 ## Serialize
 
 ```
 import qs
-import gleam/map
+import gleam/dict
 
 let query = [
     #("a", qs.One("1")),
     #("b", qs.Many(["2", "3"]))
   ]
-  |> map.from_list
+  |> dict.from_list
 
 qs.serialize(query)
 
@@ -41,11 +41,10 @@ qs.serialize(query)
 
 ## Installation
 
-If [available in Hex](https://rebar3.org/docs/configuration/dependencies/#declaring-dependencies)
-this package can be installed by adding `gleam_qs` to your `rebar.config` dependencies:
+If available on Hex this package can be added to your Gleam project:
 
-```erlang
-{deps, [
-    gleam_qs
-]}.
+```sh
+gleam add gleam_qs
 ```
+
+and its documentation can be found ad <https://hexdocs.pm/gleam_qs>
