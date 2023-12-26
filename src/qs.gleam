@@ -1,7 +1,7 @@
 import gleam/float
 import gleam/int
 import gleam/list
-import gleam/map.{Map}
+import gleam/dict.{type Dict}
 import gleam/option.{None, Some}
 import gleam/result
 import gleam/string
@@ -13,7 +13,7 @@ pub type OneOrMany {
 }
 
 pub type Query =
-  Map(String, OneOrMany)
+  Dict(String, OneOrMany)
 
 pub fn parse_key_value(
   segment: String,
@@ -44,14 +44,14 @@ pub fn parse_key_value(
 /// "?color=red&tags[]=large&tags[]=wool"
 /// |> qs.parse
 ///
-/// > Ok([ #("color", qs.One("red")), #("tags", qs.Many(["large", "wool"])) ] |> map.from_list)
+/// > Ok([ #("color", qs.One("red")), #("tags", qs.Many(["large", "wool"])) ] |> dict.from_list)
 /// ```
 ///
 pub fn parse(qs: String) -> Result(Query, String) {
   use segments <- result.then(split_and_parse(qs))
 
   list.fold(over: segments, from: empty(), with: add_segment)
-  |> map.map_values(reverse_many)
+  |> dict.map_values(reverse_many)
   |> Ok
 }
 
@@ -90,7 +90,7 @@ fn add_segment(query: Query, segment: #(String, String, Bool)) -> Query {
     }
   }
 
-  map.update(in: query, update: key, with: updater)
+  dict.update(in: query, update: key, with: updater)
 }
 
 fn reverse_many(_k: String, v: OneOrMany) -> OneOrMany {
@@ -111,7 +111,7 @@ fn reverse_many(_k: String, v: OneOrMany) -> OneOrMany {
 /// ```
 pub fn serialize(query: Query) -> String {
   query
-  |> map.to_list
+  |> dict.to_list
   |> list.map(serialize_key)
   |> list.flatten
   |> string.join("&")
@@ -148,7 +148,7 @@ fn add_question_mark(query: String) -> String {
 
 /// Make an empty Query
 pub fn empty() -> Query {
-  map.new()
+  dict.new()
 }
 
 /// Get values from the query
@@ -157,7 +157,7 @@ pub fn get(query: Query, key: String) -> Result(OneOrMany, String) {
     "Invalid key "
     |> string.append(key)
 
-  map.get(query, key)
+  dict.get(query, key)
   |> result.replace_error(error)
 }
 
@@ -259,12 +259,12 @@ pub fn maybe_get_as_list(
 
 /// Tell if the query has the given key
 pub fn has_key(query: Query, key: String) -> Bool {
-  map.has_key(query, key)
+  dict.has_key(query, key)
 }
 
 /// Insert a value in the query
 pub fn insert(query: Query, key: String, value: OneOrMany) {
-  map.insert(query, key, value)
+  dict.insert(query, key, value)
 }
 
 /// Set a unique value in the query
@@ -281,33 +281,29 @@ pub fn insert_list(query: Query, key: String, values: List(String)) {
 /// If the key is not a list then it will be promoted to a list
 /// If the key doesn't exist then it will be added as a list of one item
 pub fn push(query: Query, key: String, value: String) {
-  map.update(
-    in: query,
-    update: key,
-    with: fn(res) {
-      case res {
-        Some(current) ->
-          case current {
-            One(one) -> Many([one, value])
+  dict.update(in: query, update: key, with: fn(res) {
+    case res {
+      Some(current) ->
+        case current {
+          One(one) -> Many([one, value])
 
-            Many(many) -> Many(list.append(many, [value]))
-          }
+          Many(many) -> Many(list.append(many, [value]))
+        }
 
-        None -> Many([value])
-      }
-    },
-  )
+      None -> Many([value])
+    }
+  })
 }
 
 /// Merge two Querys.
 /// If there are entries with the same keys in both maps the entry from the second query takes precedence.
 pub fn merge(a: Query, b: Query) {
-  map.merge(a, b)
+  dict.merge(a, b)
 }
 
 /// Delete a key from the query
 pub fn delete(query: Query, key: String) {
-  map.delete(query, key)
+  dict.delete(query, key)
 }
 
 fn parse_bool(s: String) -> Result(Bool, String) {

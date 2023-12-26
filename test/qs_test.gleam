@@ -1,6 +1,6 @@
 import qs.{Many, One}
 import gleeunit/should
-import gleam/map
+import gleam/dict
 
 pub fn parse_key_value_test() {
   let segment = "a=x"
@@ -19,7 +19,7 @@ fn test_parse_ok(input: String, expected) {
   |> qs.parse
   |> should.equal(Ok(
     expected
-    |> map.from_list,
+    |> dict.from_list,
   ))
 }
 
@@ -46,7 +46,7 @@ pub fn decode_when_parsing_test() {
 
 fn test_serialize(input, expected) {
   input
-  |> map.from_list
+  |> dict.from_list
   |> qs.serialize
   |> should.equal(expected)
 }
@@ -68,91 +68,91 @@ pub fn encode_when_serializing_test() {
 
 pub fn get_as_string_test() {
   []
-  |> map.from_list
+  |> dict.from_list
   |> qs.get_as_string("a")
   |> should.equal(Error("Invalid key a"))
 
   [#("a", One("1"))]
-  |> map.from_list
+  |> dict.from_list
   |> qs.get_as_string("a")
   |> should.equal(Ok("1"))
 
   [#("a", Many([]))]
-  |> map.from_list
+  |> dict.from_list
   |> qs.get_as_string("a")
   |> should.equal(Error("a is a list"))
 }
 
 pub fn get_as_bool_test() {
   [#("a", One("true"))]
-  |> map.from_list
+  |> dict.from_list
   |> qs.get_as_bool("a")
   |> should.equal(Ok(True))
 }
 
 pub fn get_as_int_test() {
   [#("a", One("2"))]
-  |> map.from_list
+  |> dict.from_list
   |> qs.get_as_int("a")
   |> should.equal(Ok(2))
 }
 
 pub fn get_as_float_test() {
   [#("a", One("2.1"))]
-  |> map.from_list
+  |> dict.from_list
   |> qs.get_as_float("a")
   |> should.equal(Ok(2.1))
 }
 
 pub fn get_as_list_test() {
   [#("a", One("1"))]
-  |> map.from_list
+  |> dict.from_list
   |> qs.get_as_list("a")
   |> should.equal(["1"])
 
   [#("a", Many(["1", "2"]))]
-  |> map.from_list
+  |> dict.from_list
   |> qs.get_as_list("a")
   |> should.equal(["1", "2"])
 }
 
 pub fn get_as_list_of_bool_test() {
   [#("a", One("true"))]
-  |> map.from_list
+  |> dict.from_list
   |> qs.get_as_list_of_bool("a")
   |> should.equal(Ok([True]))
 }
 
 pub fn get_as_list_of_int_test() {
   [#("a", One("1"))]
-  |> map.from_list
+  |> dict.from_list
   |> qs.get_as_list_of_int("a")
   |> should.equal(Ok([1]))
 }
 
 pub fn get_as_list_of_float_test() {
   [#("a", One("1.1"))]
-  |> map.from_list
+  |> dict.from_list
   |> qs.get_as_list_of_float("a")
   |> should.equal(Ok([1.1]))
 }
 
 pub fn push_test() {
   []
-  |> map.from_list
+  |> dict.from_list
   |> qs.push("a", "1")
-  |> map.to_list
+  |> dict.to_list
   |> should.equal([#("a", Many(["1"]))])
 
   [#("a", One("1"))]
-  |> map.from_list
+  |> dict.from_list
   |> qs.push("a", "2")
-  |> map.to_list
+  |> dict.to_list
   |> should.equal([#("a", Many(["1", "2"]))])
 
   [#("a", Many(["1"]))]
-  |> map.from_list
+  |> dict.from_list
   |> qs.push("a", "2")
-  |> map.to_list
+  |> dict.to_list
   |> should.equal([#("a", Many(["1", "2"]))])
 }

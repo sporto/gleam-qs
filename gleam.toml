@@ -1,8 +1,12 @@
 name = "gleam_qs"
-version = "0.2.0"
+version = "0.3.0"
 
 description = "Parse and encode URL query strings"
 licences = ["MIT"]
 repository = { type = "github", user = "sporto", repo = "gleam_qs" }
 
-dependencies = { gleam_stdlib = "~> 0.28", gleeunit = "~> 0.10"}
+gleam = ">= 0.32.0"
+dev-dependencies = { gleeunit = "~> 1.0"}
+
+[dependencies]
+gleam_stdlib = "~> 0.28"
