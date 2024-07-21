@@ -15,6 +15,10 @@ pub type Config {
   Config(fail_on_invalid: Bool)
 }
 
+pub fn default_config() -> Config {
+  Config(fail_on_invalid: False)
+}
+
 pub type ParseInput {
   ParseInput(query: String, config: Config)
 }
@@ -68,7 +72,7 @@ pub fn default_parse(qs: String) -> Result(QueryBasic, String) {
 }
 
 pub fn parse_input(query: String) -> ParseInput {
-  ParseInput(query: query, config: Config(fail_on_invalid: False))
+  ParseInput(query: query, config: default_config())
 }
 
 pub fn with_fail_on_invalid(input: ParseInput, value: Bool) -> ParseInput {

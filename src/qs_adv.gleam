@@ -15,8 +15,21 @@ pub type OneOrMany {
 pub type QueryAdv =
   qs.Query(OneOrMany)
 
+pub type Scheme {
+  SchemeMultipleValues(list_suffix: String)
+  SchemeSingleValue(list_suffix: String, separator: String)
+}
+
+pub fn scheme_rails_like() -> Scheme {
+  SchemeMultipleValues(list_suffix: "[]")
+}
+
 pub type Config {
-  Config(fail_on_invalid: Bool)
+  Config(fail_on_invalid: Bool, scheme: Scheme)
+}
+
+pub fn default_config() -> Config {
+  Config(fail_on_invalid: False, scheme: scheme_rails_like())
 }
 
 pub type ParseInput {
@@ -46,11 +59,20 @@ pub fn default_parse(qs: String) -> Result(QueryAdv, String) {
 }
 
 pub fn parse_input(query: String) -> ParseInput {
-  ParseInput(query: query, config: Config(fail_on_invalid: False))
+  ParseInput(query: query, config: default_config())
+}
+
+/// Replace the configuration on ParseInput
+pub fn with_config(input: ParseInput, config: Config) -> ParseInput {
+  ParseInput(..input, config: config)
 }
 
 pub fn with_fail_on_invalid(input: ParseInput, value: Bool) -> ParseInput {
   ParseInput(..input, config: Config(..input.config, fail_on_invalid: value))
+}
+
+pub fn with_scheme(input: ParseInput, scheme: Scheme) -> ParseInput {
+  ParseInput(..input, config: Config(..input.config, scheme: scheme))
 }
 
 pub fn parse(input: ParseInput) -> Result(QueryAdv, String) {
@@ -59,12 +81,18 @@ pub fn parse(input: ParseInput) -> Result(QueryAdv, String) {
     input.config.fail_on_invalid,
   ))
 
-  list.fold(over: key_values, from: empty(), with: add_key_value)
+  list.fold(over: key_values, from: empty(), with: fn(query, key_value) {
+    add_key_value(input.config.scheme, query, key_value)
+  })
   |> Ok
 }
 
-fn add_key_value(query: QueryAdv, key_value: qs.RawKeyValue) -> QueryAdv {
-  let list_suffix = "[]"
+fn add_key_value(
+  scheme: Scheme,
+  query: QueryAdv,
+  key_value: qs.RawKeyValue,
+) -> QueryAdv {
+  let list_suffix = scheme.list_suffix
   let #(raw_key, raw_value) = key_value
 
   let #(is_list, key) = case string.ends_with(raw_key, list_suffix) {
@@ -110,7 +138,7 @@ fn add_key_value(query: QueryAdv, key_value: qs.RawKeyValue) -> QueryAdv {
 ///
 /// "?color=red&tags[]=large&tags[]=wool"
 /// ```
-pub fn serialize(query: QueryAdv) -> String {
+pub fn default_serialize(query: QueryAdv) -> String {
   qs.serialize_with(query, serialize_key_value)
 }
 

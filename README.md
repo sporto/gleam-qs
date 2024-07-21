@@ -61,3 +61,45 @@ qs.serialize(query)
 
 > "?color=red&pet=cat&pet=dog"
 ```
+
+### Advanced parsing
+
+By default advanced uses a Rails like query scheme. E.g.
+
+```gleam
+import qs_adv
+import gleam/dict
+
+"?color=red&pets[]=cat&pets[]=dog"
+|> qs_adv.default_parse
+
+==
+
+Ok(
+  dict.from_list(
+    [
+      #("color", One("red")),
+      #("pets", Many(["cat", "dog"])),
+    ]
+  )
+)
+```
+
+But this is configurable.
+
+### Advanced serialization
+
+```gleam
+import qs_adv
+import gleam/dict
+
+let query = [
+    #("color", ["red"]),
+    #("pets", ["cat", "dog"])
+  ]
+  |> dict.from_list
+
+qs_adv.default_serialize(query)
+
+> "?color=red&pets[]=cat&pets[]=dog"
+```

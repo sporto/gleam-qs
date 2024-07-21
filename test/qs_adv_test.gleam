@@ -46,26 +46,26 @@ pub fn decode_when_parsing_test() {
   test_default_parse_ok("?a=100%25%20great", [#("a", One("100% great"))])
 }
 
-fn test_serialize(input, expected) {
+fn test_default_serialize(input, expected) {
   input
   |> dict.from_list
-  |> qs_adv.serialize
+  |> qs_adv.default_serialize
   |> should.equal(expected)
 }
 
-pub fn serialize_test() {
-  test_serialize([#("a", One("1"))], "?a=1")
+pub fn default_serialize_test() {
+  test_default_serialize([#("a", One("1"))], "?a=1")
 
-  test_serialize([#("a", One("1")), #("b", One("2"))], "?a=1&b=2")
+  test_default_serialize([#("a", One("1")), #("b", One("2"))], "?a=1&b=2")
 
-  test_serialize(
+  test_default_serialize(
     [#("a", One("1")), #("b", Many(["2", "3"]))],
     "?a=1&b[]=2&b[]=3",
   )
 }
 
 pub fn encode_when_serializing_test() {
-  test_serialize([#("a", One("100% great"))], "?a=100%25%20great")
+  test_default_serialize([#("a", One("100% great"))], "?a=100%25%20great")
 }
 
 pub fn get_as_string_test() {
