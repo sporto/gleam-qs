@@ -38,7 +38,9 @@ pub fn decode_when_parsing_test() {
 }
 
 pub fn no_value_fails_test() {
-  let config = qs.Config(..qs.default_config(), fail_on_invalid: True)
+  let config =
+    qs.default_config()
+    |> qs.with_fail_on_invalid(True)
 
   qs.parse("?a&a=2", config)
   |> should.equal(Error("Unable to parse a"))

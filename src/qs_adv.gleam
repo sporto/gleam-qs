@@ -85,13 +85,11 @@ fn add_key_value(
   query: QueryAdv,
   key_value: qs.RawKeyValue,
 ) -> QueryAdv {
-  let list_suffix = scheme.list_suffix
   let #(raw_key, raw_value) = key_value
 
-  let #(is_list, key) = case string.ends_with(raw_key, list_suffix) {
-    True -> #(True, string.replace(raw_key, list_suffix, ""))
-    False -> #(False, raw_key)
-  }
+  let list_suffix = scheme.list_suffix
+  let key_without_suffix = string.replace(raw_key, list_suffix, "")
+  let is_list = raw_key != key_without_suffix
 
   let updater = fn(res) {
     case is_list, res {
@@ -110,7 +108,7 @@ fn add_key_value(
     }
   }
 
-  dict.upsert(in: query, update: key, with: updater)
+  dict.upsert(in: query, update: key_without_suffix, with: updater)
 }
 
 fn value_as_many(
@@ -151,34 +149,43 @@ pub fn default_serialize(query: QueryAdv) -> String {
 pub fn serialize(input: QueryAdv, config: Config) -> String {
   input
   |> dict.to_list
-  |> list.flat_map(fn(key_value) {
-    serialize_key_value(key_value, config.scheme)
-  })
+  |> list.map(encode_key_and_values)
+  |> list.map(add_key_suffix(_, config.scheme))
+  |> list.flat_map(unfold_values(_, config.scheme))
+  |> list.map(join_key_value)
   |> string.join("&")
   |> qs.add_question_mark
 }
 
-fn serialize_key_value(
-  key_value: #(String, OneOrMany),
-  scheme: Scheme,
-) -> List(String) {
+fn encode_key_and_values(key_value: #(String, OneOrMany)) {
   let #(key, one_or_many) = key_value
-  let key_encoded = uri.percent_encode(key)
-  let encoded_one_or_many = map_one_or_many(one_or_many, uri.percent_encode)
-
-  let unfolded = unfold_key_value(key_encoded, encoded_one_or_many, scheme)
-
-  list.map(unfolded, fn(tuple) {
-    let #(key, value) = tuple
-    key <> "=" <> value
-  })
+  #(qs.encode(key), map_one_or_many(one_or_many, qs.encode))
 }
 
-fn unfold_key_value(
-  key: String,
-  one_or_many: OneOrMany,
+fn add_key_suffix(
+  key_value: #(String, OneOrMany),
+  scheme: Scheme,
+) -> #(String, OneOrMany) {
+  let #(key, one_or_many) = key_value
+
+  case one_or_many {
+    One(_) -> key_value
+    Many(values) -> {
+      #(add_list_suffix_or_key(key, scheme), Many(values))
+    }
+  }
+}
+
+fn add_list_suffix_or_key(key: String, scheme: Scheme) -> String {
+  key <> scheme.list_suffix
+}
+
+fn unfold_values(
+  key_value: #(String, OneOrMany),
   scheme: Scheme,
 ) -> List(qs.RawKeyValue) {
+  let #(key, one_or_many) = key_value
+
   case one_or_many {
     One(value) -> [#(key, value)]
     Many(values) -> unfold_key_value_many(key, values, scheme)
@@ -191,14 +198,29 @@ fn unfold_key_value_many(
   scheme: Scheme,
 ) -> List(qs.RawKeyValue) {
   case scheme {
-    SchemeListAsSingleValue(suffix, separator) -> {
-      [#(key <> suffix, string.join(values, separator))]
+    SchemeListAsSingleValue(_, separator) -> {
+      [#(key, string.join(values, separator))]
     }
-    SchemeListAsMultipleValues(suffix) -> {
-      list.map(values, fn(value) { #(key <> suffix, value) })
+    SchemeListAsMultipleValues(_) -> {
+      list.map(values, fn(value) { #(key, value) })
     }
   }
 }
+
+fn join_key_value(tuple) {
+  let #(key, value) = tuple
+  key <> "=" <> value
+}
+
+// fn encode_reserved(input: String) -> String {
+//   list.fold(over: reserved_chars, from: input, with: fn(input, char) {
+//     string.replace(input, char, encode(char))
+//   })
+// }
+
+// fn encode(val) {
+//   uri.percent_encode(val)
+// }
 
 pub fn empty() -> QueryAdv {
   qs.empty()

@@ -2,120 +2,131 @@ import gleam/dict
 import gleeunit/should
 import qs_adv.{Many, One} as qsa
 
-fn test_default_parse_ok(input: String, expected) {
-  input
-  |> qsa.default_parse
-  |> should.equal(Ok(
-    expected
-    |> dict.from_list,
-  ))
+fn test_roundtrip(
+  config config: qsa.Config,
+  input input: String,
+  output output: String,
+  query query: List(#(String, qsa.OneOrMany)),
+) {
+  let expected_query = dict.from_list(query)
+
+  // Parse
+  let assert Ok(parsed) =
+    input
+    |> qsa.parse(config)
+
+  parsed
+  |> should.equal(expected_query)
+
+  // Serialize
+  qsa.serialize(expected_query, config)
+  |> should.equal(output)
+
+  // Roundtrip
+  parsed
+  |> qsa.serialize(config)
+  |> should.equal(output)
 }
 
 pub fn default_parse_test() {
-  test_default_parse_ok("?a=1", [#("a", One("1"))])
+  let config = qsa.default_config()
+
+  let qs_1 = "?a=1"
+
+  test_roundtrip(
+    config: config,
+    input: qs_1,
+    query: [#("a", One("1"))],
+    output: qs_1,
+  )
 
   // It can parse two values
-  test_default_parse_ok("?a=1&b=2", [#("a", One("1")), #("b", One("2"))])
+  let qs_2 = "?a=1&b=2"
+  test_roundtrip(
+    config: config,
+    input: qs_2,
+    query: [#("a", One("1")), #("b", One("2"))],
+    output: qs_2,
+  )
 
   // It can parse a list
   // And the list is in the given order
-  test_default_parse_ok("?a[]=1&a[]=2", [#("a", Many(["1", "2"]))])
+  let qs_3 = "?a[]=1&a[]=2"
+  test_roundtrip(config: config, input: qs_3, output: qs_3, query: [
+    #("a", Many(["1", "2"])),
+  ])
 
   // A single value gets replaced with a list value
-  test_default_parse_ok("?a=1&a[]=2", [#("a", Many(["2"]))])
+  let qs_4 = "?a=1&a[]=2"
+  test_roundtrip(config: config, input: qs_4, output: "?a[]=2", query: [
+    #("a", Many(["2"])),
+  ])
 
   // A list value gets replaced with a single value
-  test_default_parse_ok("?a[]=1&a=2", [#("a", One("2"))])
+  let qs_5 = "?a[]=1&a=2"
+  test_roundtrip(config: config, input: qs_5, output: "?a=2", query: [
+    #("a", One("2")),
+  ])
+
   // Empty value
-  test_default_parse_ok("?a[]", [])
+  test_roundtrip(config: config, input: "?a[]", output: "", query: [])
 }
 
-pub fn decode_when_parsing_test() {
-  test_default_parse_ok("?a=100%25%20great", [#("a", One("100% great"))])
+pub fn decode_encode_test() {
+  let config = qsa.default_config()
+  let qs = "?a=100%25%20great"
+
+  test_roundtrip(config: config, input: qs, output: qs, query: [
+    #("a", One("100% great")),
+  ])
 }
 
-fn test_schema_parse_ok(
-  input: String,
-  scheme: qsa.Scheme,
-  expected: List(#(String, qsa.OneOrMany)),
-) {
+pub fn scheme_joined_values_test() {
+  let scheme = qsa.SchemeListAsSingleValue(list_suffix: "[]", separator: "|")
+
   let config =
     qsa.default_config()
     |> qsa.with_scheme(scheme)
 
-  input
-  |> qsa.parse(config)
-  |> should.equal(Ok(
-    expected
-    |> dict.from_list,
-  ))
+  let qs = "?pets[]=cat|dog"
+
+  let query = [#("pets", Many(["cat", "dog"]))]
+
+  test_roundtrip(config: config, input: qs, output: qs, query: query)
 }
 
-pub fn parse_scheme_joined_test() {
-  test_schema_parse_ok(
-    "?pets[]=cat|dog",
-    qsa.SchemeListAsSingleValue(list_suffix: "[]", separator: "|"),
-    [#("pets", Many(["cat", "dog"]))],
-  )
-
+pub fn scheme_joined_missing_suffix_test() {
   // Suffix is missing
-  test_schema_parse_ok(
-    "?pets=cat|dog",
-    qsa.SchemeListAsSingleValue(list_suffix: "[]", separator: "|"),
-    [#("pets", One("cat|dog"))],
-  )
+  let scheme = qsa.SchemeListAsSingleValue(list_suffix: "[]", separator: "|")
 
-  // No suffix, everything is a list
-  test_schema_parse_ok(
-    "?pets=cat|dog",
-    qsa.SchemeListAsSingleValue(list_suffix: "", separator: "|"),
-    [#("pets", Many(["cat", "dog"]))],
-  )
-
-  // No separator
-  test_schema_parse_ok(
-    "?pets[]=cat",
-    qsa.SchemeListAsSingleValue(list_suffix: "[]", separator: ""),
-    [#("pets", Many(["c", "a", "t"]))],
-  )
-}
-
-fn test_default_serialize(input, expected) {
-  input
-  |> dict.from_list
-  |> qsa.default_serialize
-  |> should.equal(expected)
-}
-
-pub fn default_serialize_test() {
-  test_default_serialize([#("a", One("1"))], "?a=1")
-
-  test_default_serialize([#("a", One("1")), #("b", One("2"))], "?a=1&b=2")
-
-  test_default_serialize(
-    [#("a", One("1")), #("b", Many(["2", "3"]))],
-    "?a=1&b[]=2&b[]=3",
-  )
-}
-
-pub fn encode_when_serializing_test() {
-  test_default_serialize([#("a", One("100% great"))], "?a=100%25%20great")
-}
-
-pub fn serialize_with_scheme_test() {
   let config =
     qsa.default_config()
-    |> qsa.with_scheme(qsa.SchemeListAsSingleValue(
-      list_suffix: "[]",
-      separator: "|",
-    ))
+    |> qsa.with_scheme(scheme)
 
-  [#("pets", Many(["cat", "dog"]))]
-  |> dict.from_list
-  |> qsa.serialize(config)
-  |> should.equal("?pets[]=cat|dog")
+  let qs = "?pets=cat|dog"
+  let output = "?pets=cat%7Cdog"
+
+  let query = [#("pets", One("cat|dog"))]
+
+  test_roundtrip(config: config, input: qs, output: output, query: query)
 }
 
+pub fn scheme_joined_no_separator_test() {
+  // No separator
+  let scheme = qsa.SchemeListAsSingleValue(list_suffix: "[]", separator: "")
+
+  let config =
+    qsa.default_config()
+    |> qsa.with_scheme(scheme)
+
+  let qs = "?pets[]=cat"
+
+  let query = [#("pets", Many(["c", "a", "t"]))]
+
+  test_roundtrip(config: config, input: qs, output: qs, query: query)
+}
+
+/// Utility
 pub fn get_as_string_test() {
   []
   |> dict.from_list

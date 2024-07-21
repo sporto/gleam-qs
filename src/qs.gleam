@@ -5,6 +5,9 @@ import gleam/result
 import gleam/string
 import gleam/uri
 
+@internal
+pub const reserved_chars = [";", "/", "?", ":", "@", "=", "&"]
+
 pub type Query(v) =
   Dict(String, v)
 
@@ -17,6 +20,10 @@ pub type Config {
 
 pub fn default_config() -> Config {
   Config(fail_on_invalid: False)
+}
+
+pub fn with_fail_on_invalid(_config: Config, value: Bool) -> Config {
+  Config(fail_on_invalid: value)
 }
 
 @internal
@@ -125,14 +132,25 @@ pub fn default_serialize(query: QueryBasic) -> String {
 
 fn serialize_key_value(key_value: #(String, List(String))) -> List(String) {
   let #(key, values) = key_value
-  list.map(values, fn(value) {
-    uri.percent_encode(key) <> "=" <> uri.percent_encode(value)
-  })
+  list.map(values, fn(value) { encode(key) <> "=" <> encode(value) })
 }
 
 @internal
 pub fn add_question_mark(query: String) -> String {
-  "?" <> query
+  case query {
+    "" -> ""
+    _ -> "?" <> query
+  }
+}
+
+@internal
+pub fn decode(val) {
+  uri.percent_decode(val)
+}
+
+@internal
+pub fn encode(val) {
+  uri.percent_encode(val)
 }
 
 /// Make an empty Query
