@@ -13,7 +13,8 @@ deps:
     RUN gleam build
 
 test:
+    FROM +deps
     RUN just test
 
 all:
-    +test
+    BUILD +test
