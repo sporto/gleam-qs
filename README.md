@@ -1,51 +1,52 @@
 # gleam_qs
 
-A query string parser for Gleam. Based on https://github.com/ljharb/qs
+A query string parser for Gleam.
 
-QS uses `[]` for lists.
-
-E.g.
+## Install
 
 ```
-?ids[]=1&ids[]=2
+gleam add valid
 ```
 
-## Parse
+## Usage
 
-```
+QS has two modules `qs` (Basic) and `qs_adv` (Advance).
+
+A query in basic is a `Dict(String, List(String))`.
+
+Basic has not concept of single or list values. Every value is a `List(String)`.
+
+### Basic parsing
+
+```gleam
 import qs
-import gleam/map
+import gleam/dict
 
-"?color=red&tags[]=large&tags[]=wool"
+"?color=red&pet=cat&pet=dog"
 |> qs.parse
 
-> Ok([ #("color", qs.One("red")), #("tags", qs.Many(["large", "wool"])) ] |> map.from_list)
+==
+
+Ok(
+  dict.from_list(
+    [ #("color", ["red"]), #("pet", ["cat", "dog"]) ] )
+  )
+)
 ```
 
-## Serialize
+### Basic serialization
 
-```
+```gleam
 import qs
-import gleam/map
+import gleam/dict
 
 let query = [
-    #("a", qs.One("1")),
-    #("b", qs.Many(["2", "3"]))
+    #("color", ["red"]),
+    #("pet", ["cat", "dog"])
   ]
   |> map.from_list
 
 qs.serialize(query)
 
-> "?a=1&b[]=2&b[]=3"
-```
-
-## Installation
-
-If [available in Hex](https://rebar3.org/docs/configuration/dependencies/#declaring-dependencies)
-this package can be installed by adding `gleam_qs` to your `rebar.config` dependencies:
-
-```erlang
-{deps, [
-    gleam_qs
-]}.
+> "?color=red&pet=cat&pet=dog"
 ```
