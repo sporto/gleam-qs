@@ -28,7 +28,9 @@ pub fn parse_test() {
 
   // parses duplicates with symbols
   test_parse_ok("?a[]=1&a[]=2", [#("a[]", ["1", "2"])])
+
   // No value
+  test_parse_ok("?a&a=2", [#("a", ["2"])])
 }
 
 pub fn decode_when_parsing_test() {

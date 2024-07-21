@@ -53,7 +53,8 @@ pub fn split_and_parse(qs: String) -> Result(List(RawKeyValue), String) {
   |> string.replace("?", "")
   |> string.split(on: "&")
   |> list.map(parse_key_value)
-  |> result.all
+  |> result.values
+  |> Ok
 }
 
 fn add_key_value(query: QueryBasic, key_value: RawKeyValue) -> QueryBasic {
