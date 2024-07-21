@@ -1,61 +1,54 @@
+import gleam/dict.{type Dict}
 import gleam/float
 import gleam/int
 import gleam/list
-import gleam/map.{Map}
 import gleam/option.{None, Some}
 import gleam/result
 import gleam/string
 import gleam/uri
 
-pub type OneOrMany {
-  One(String)
-  Many(List(String))
-}
+pub type Query(v) =
+  Dict(String, v)
 
-pub type Query =
-  Map(String, OneOrMany)
+pub type QueryBasic =
+  Query(List(String))
 
-pub fn parse_key_value(
-  segment: String,
-) -> Result(#(String, String, Bool), String) {
+@internal
+pub type RawKeyValue =
+  #(String, String)
+
+@internal
+pub fn parse_key_value(segment: String) -> Result(RawKeyValue, String) {
   segment
   |> uri.percent_decode
   |> result.unwrap(segment)
   |> string.split_once(on: "=")
-  |> result.map(fn(pair) {
-    let #(k, v) = pair
-    case string.ends_with(k, "[]") {
-      True -> #(string.replace(k, "[]", ""), v, True)
-
-      False -> #(k, v, False)
-    }
-  })
   |> result.replace_error(
     "Unable to parse "
     |> string.append(segment),
   )
 }
 
-///Parse a query string
+/// Parse a query string
 ///
 /// ## Example
 ///
 /// ```
-/// "?color=red&tags[]=large&tags[]=wool"
+/// "?color=red&tags=large&tags=wool"
 /// |> qs.parse
 ///
-/// > Ok([ #("color", qs.One("red")), #("tags", qs.Many(["large", "wool"])) ] |> map.from_list)
+/// > Ok([ #("color", ["red")], #("tags", ["large", "wool"]) ] |> dict.from_list)
 /// ```
 ///
-pub fn parse(qs: String) -> Result(Query, String) {
-  use segments <- result.then(split_and_parse(qs))
+pub fn parse(qs: String) -> Result(QueryBasic, String) {
+  use key_values <- result.then(split_and_parse(qs))
 
-  list.fold(over: segments, from: empty(), with: add_segment)
-  |> map.map_values(reverse_many)
+  list.fold(over: key_values, from: empty(), with: add_key_value)
   |> Ok
 }
 
-fn split_and_parse(qs: String) -> Result(List(#(String, String, Bool)), String) {
+@internal
+pub fn split_and_parse(qs: String) -> Result(List(RawKeyValue), String) {
   qs
   |> string.replace("?", "")
   |> string.split(on: "&")
@@ -63,43 +56,26 @@ fn split_and_parse(qs: String) -> Result(List(#(String, String, Bool)), String) 
   |> result.all
 }
 
-fn add_segment(query: Query, segment: #(String, String, Bool)) -> Query {
-  let #(key, value, is_list) = segment
+fn add_key_value(query: QueryBasic, key_value: RawKeyValue) -> QueryBasic {
+  let #(key, value) = key_value
 
   let updater = fn(res) {
     case res {
-      Some(existing) ->
-        // If OneOrMany doesn't match, we replace
-        case is_list {
-          True ->
-            case existing {
-              One(_) -> Many([value])
-
-              Many(existing_list) -> Many([value, ..existing_list])
-            }
-
-          False -> One(value)
-        }
-
-      None ->
-        case is_list {
-          True -> Many([value])
-
-          False -> One(value)
-        }
+      Some(existing) -> list.append(existing, [value])
+      None -> [value]
     }
   }
 
-  map.update(in: query, update: key, with: updater)
+  dict.upsert(in: query, update: key, with: updater)
 }
 
-fn reverse_many(_k: String, v: OneOrMany) -> OneOrMany {
-  case v {
-    Many(values) -> Many(list.reverse(values))
+// fn reverse_many(_k: String, v: OneOrMany) -> OneOrMany {
+//   case v {
+//     Many(values) -> Many(list.reverse(values))
 
-    _ -> v
-  }
-}
+//     _ -> v
+//   }
+// }
 
 /// Serialize a query
 ///
@@ -109,36 +85,28 @@ fn reverse_many(_k: String, v: OneOrMany) -> OneOrMany {
 /// [ #("color", qs.One("red")), #("tags", qs.Many(["large", "wool"])) ] |> qs.serialize
 /// > "?color=red&tags[]=large&tags[]=wool"
 /// ```
-pub fn serialize(query: Query) -> String {
+pub fn serialize(query: QueryBasic) -> String {
+  serialize_with(query, serialize_key_value)
+}
+
+@internal
+pub fn serialize_with(query: Query(v), serialize_key_value: fn(#(String, v)) ->
+  List(String)) -> String {
   query
-  |> map.to_list
-  |> list.map(serialize_key)
-  |> list.flatten
+  |> dict.to_list
+  |> list.flat_map(serialize_key_value)
   |> string.join("&")
   |> add_question_mark
 }
 
-fn serialize_key(input: #(String, OneOrMany)) -> List(String) {
-  let #(key, one_or_many) = input
-
-  case one_or_many {
-    One(value) -> [join_key_value(key, value, "=")]
-
-    Many(values) -> {
-      values
-      |> list.map(join_key_value(key, _, "[]="))
-    }
-  }
+fn serialize_key_value(key_value: #(String, List(String))) -> List(String) {
+  let #(key, values) = key_value
+  list.map(values, fn(value) { join_key_value(key, value, "=") })
 }
 
-fn join_key_value(key: String, value: String, join: String) -> String {
-  key
-  |> uri.percent_encode
-  |> string.append(join)
-  |> string.append(
-    value
-    |> uri.percent_encode,
-  )
+@internal
+pub fn join_key_value(key: String, value: String, join: String) -> String {
+  uri.percent_encode(key) <> join <> uri.percent_encode(value)
 }
 
 fn add_question_mark(query: String) -> String {
@@ -147,184 +115,54 @@ fn add_question_mark(query: String) -> String {
 }
 
 /// Make an empty Query
-pub fn empty() -> Query {
-  map.new()
+pub fn empty() -> Query(v) {
+  dict.new()
 }
 
 /// Get values from the query
-pub fn get(query: Query, key: String) -> Result(OneOrMany, String) {
-  let error =
-    "Invalid key "
-    |> string.append(key)
+pub fn get(query: Query(v), key: String) -> Result(v, String) {
+  let error = "Invalid key " <> key
 
-  map.get(query, key)
+  dict.get(query, key)
   |> result.replace_error(error)
 }
 
-/// Attempt to get one value as a string
-/// If the value is a list this will fail
-pub fn get_as_string(query: Query, key: String) -> Result(String, String) {
-  use one_or_many <- result.then(get(query, key))
-
-  case one_or_many {
-    One(value) -> Ok(value)
-    Many(_) ->
-      Error(
-        key
-        |> string.append(" is a list"),
-      )
-  }
-}
-
-/// Attempt to get one value as a Bool
-/// If the value is a list this will fail
-pub fn get_as_bool(query: Query, key: String) -> Result(Bool, String) {
-  get_as_string(query, key)
-  |> result.then(parse_bool)
-}
-
-/// Attempt to get one value as an Int
-/// If the value is a list this will fail
-pub fn get_as_int(query: Query, key: String) -> Result(Int, String) {
-  use value <- result.then(get_as_string(query, key))
-
-  value
-  |> int.parse
-  |> result.replace_error(
-    "Invalid Int "
-    |> string.append(value),
-  )
-}
-
-/// Attempt to get one value as an Float
-/// If the value is a list this will fail
-pub fn get_as_float(query: Query, key: String) -> Result(Float, String) {
-  use value <- result.then(get_as_string(query, key))
-
-  value
-  |> float.parse
-  |> result.replace_error(
-    "Invalid Float "
-    |> string.append(value),
-  )
-}
-
-/// Get values from the query as a list of strings (regardless if one or many).
-/// If keys are not present this defaults to an empty list
-pub fn get_as_list(query: Query, key: String) -> List(String) {
-  maybe_get_as_list(query, key)
-  |> result.unwrap([])
-}
-
-/// Attempt to get values as a list of Bool
-pub fn get_as_list_of_bool(
-  query: Query,
-  key: String,
-) -> Result(List(Bool), String) {
-  get_as_list(query, key)
-  |> list.map(parse_bool)
-  |> result.all
-}
-
-/// Attempt to get values as a list of Int
-pub fn get_as_list_of_int(
-  query: Query,
-  key: String,
-) -> Result(List(Int), String) {
-  get_as_list(query, key)
-  |> list.map(int.parse)
-  |> result.all
-  |> result.replace_error("Couldn't parse all values")
-}
-
-/// Attempt to get values as a list of Float
-pub fn get_as_list_of_float(
-  query: Query,
-  key: String,
-) -> Result(List(Float), String) {
-  get_as_list(query, key)
-  |> list.map(float.parse)
-  |> result.all
-  |> result.replace_error("Couldn't parse all values")
-}
-
-// Get values from the query as a list of strings. If key is not present this returns an Error.
-pub fn maybe_get_as_list(
-  query: Query,
-  key: String,
-) -> Result(List(String), String) {
-  get(query, key)
-  |> result.map(to_list)
-}
-
 /// Tell if the query has the given key
-pub fn has_key(query: Query, key: String) -> Bool {
-  map.has_key(query, key)
+pub fn has_key(query: Query(b), key: String) -> Bool {
+  dict.has_key(query, key)
 }
 
 /// Insert a value in the query
-pub fn insert(query: Query, key: String, value: OneOrMany) {
-  map.insert(query, key, value)
+/// Replaces existing values
+pub fn insert(query: Query(b), key: String, value: b) {
+  dict.insert(query, key, value)
 }
 
-/// Set a unique value in the query
-pub fn insert_one(query: Query, key: String, value: String) {
-  insert(query, key, One(value))
-}
+// pub fn push(query: Query, key: String, value: String) {
+//   div.update(in: query, update: key, with: fn(res) {
+//     case res {
+//       Some(current) ->
+//         case current {
+//           One(one) -> Many([one, value])
 
-/// Set a list of values in the query
-pub fn insert_list(query: Query, key: String, values: List(String)) {
-  insert(query, key, Many(values))
-}
+//           Many(many) -> Many(list.append(many, [value]))
+//         }
+
+//       None -> Many([value])
+//     }
+//   })
+// }
 
 /// Adds one value to a list
 /// If the key is not a list then it will be promoted to a list
 /// If the key doesn't exist then it will be added as a list of one item
-pub fn push(query: Query, key: String, value: String) {
-  map.update(
-    in: query,
-    update: key,
-    with: fn(res) {
-      case res {
-        Some(current) ->
-          case current {
-            One(one) -> Many([one, value])
-
-            Many(many) -> Many(list.append(many, [value]))
-          }
-
-        None -> Many([value])
-      }
-    },
-  )
-}
-
 /// Merge two Querys.
 /// If there are entries with the same keys in both maps the entry from the second query takes precedence.
-pub fn merge(a: Query, b: Query) {
-  map.merge(a, b)
+pub fn merge(a: Query(a), b: Query(a)) {
+  dict.merge(a, b)
 }
 
 /// Delete a key from the query
-pub fn delete(query: Query, key: String) {
-  map.delete(query, key)
-}
-
-fn parse_bool(s: String) -> Result(Bool, String) {
-  case s {
-    "true" -> Ok(True)
-    "false" -> Ok(False)
-    _ ->
-      Error(
-        "Invalid "
-        |> string.append(s),
-      )
-  }
-}
-
-fn to_list(one_or_many: OneOrMany) -> List(String) {
-  case one_or_many {
-    One(value) -> [value]
-    Many(values) -> values
-  }
+pub fn delete(query: Query(a), key: String) {
+  dict.delete(query, key)
 }

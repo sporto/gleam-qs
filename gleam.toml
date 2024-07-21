@@ -1,5 +1,5 @@
 name = "gleam_qs"
-version = "0.2.0"
+version = "0.5.0"
 
 description = "Parse and encode URL query strings"
 licences = ["MIT"]
