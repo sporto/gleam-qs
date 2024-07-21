@@ -2,6 +2,13 @@ import gleam/dict
 import gleeunit/should
 import qs_adv.{Many, One} as qsa
 
+fn config_compressed() {
+  let scheme = qsa.SchemeListAsSingleValue(list_suffix: "[]", separator: "|")
+
+  qsa.default_config()
+  |> qsa.with_scheme(scheme)
+}
+
 fn test_roundtrip(
   config config: qsa.Config,
   input input: String,
@@ -74,11 +81,41 @@ pub fn default_parse_test() {
 
 pub fn decode_encode_test() {
   let config = qsa.default_config()
-  let qs = "?a=100%25%20great"
 
-  test_roundtrip(config: config, input: qs, output: qs, query: [
-    #("a", One("100% great")),
-  ])
+  // Decodes / Encodes the value
+  let qs_1 = "?a=100%25%20great"
+  let query_1 = [#("a", One("100% great"))]
+  test_roundtrip(config: config, input: qs_1, output: qs_1, query: query_1)
+
+  // Decodes / Encodes the key
+  let qs_2 = "?a%25=great"
+  let query_2 = [#("a%", One("great"))]
+  test_roundtrip(config: config, input: qs_2, output: qs_2, query: query_2)
+
+  // Can use already encoded keys
+  let qs_3 = "?a%5B%5D=1"
+  let query_3 = [#("a", Many(["1"]))]
+  test_roundtrip(config: config, input: qs_3, output: "?a[]=1", query: query_3)
+
+  // Decodes / Encodes the key
+  let qs_4 = "?a%25[]=a|b"
+  let query_4 = [#("a%", Many(["a", "b"]))]
+  test_roundtrip(
+    config: config_compressed(),
+    input: qs_4,
+    output: qs_4,
+    query: query_4,
+  )
+
+  // Can use already encoded value
+  let qs_5 = "?a[]=a%7Cb"
+  let query_5 = [#("a", Many(["a", "b"]))]
+  test_roundtrip(
+    config: config_compressed(),
+    input: qs_5,
+    output: "?a[]=a|b",
+    query: query_5,
+  )
 }
 
 pub fn scheme_joined_values_test() {
@@ -96,7 +133,7 @@ pub fn scheme_joined_values_test() {
 }
 
 pub fn scheme_joined_missing_suffix_test() {
-  // Suffix is missing
+  // Suffix is missing in the given query string
   let scheme = qsa.SchemeListAsSingleValue(list_suffix: "[]", separator: "|")
 
   let config =
