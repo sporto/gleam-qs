@@ -104,38 +104,43 @@ fn add_key_value(
     False -> #(False, raw_key)
   }
 
-  let set_many = fn(given_raw_value, existing_values) {
-    let added_values = case scheme {
-      SchemeListAsSingleValue(_, separator) -> {
-        string.split(given_raw_value, separator)
-      }
-      SchemeListAsMultipleValues(_) -> [given_raw_value]
-    }
-    let next_values = list.append(existing_values, added_values)
-    Many(next_values)
-  }
-
   let updater = fn(res) {
-    case res {
-      Some(existing) ->
-        // If OneOrMany doesn't match, we replace
-        case is_list {
-          True ->
-            case existing {
-              One(_) -> set_many(raw_value, [])
-              Many(existing_values) -> set_many(raw_value, existing_values)
-            }
-          False -> One(raw_value)
+    case is_list, res {
+      True, Some(existing) -> {
+        case existing {
+          One(_) -> value_as_many(raw_value, [], scheme)
+          Many(existing_values) ->
+            value_as_many(raw_value, existing_values, scheme)
         }
-      None ->
-        case is_list {
-          True -> set_many(raw_value, [])
-          False -> One(raw_value)
-        }
+      }
+      // The list doesn't exist yet
+      True, None -> value_as_many(raw_value, [], scheme)
+      // A single value is always replaced
+      // So we don't care if it exists
+      False, _ -> One(raw_value)
     }
   }
 
   dict.upsert(in: query, update: key, with: updater)
+}
+
+fn value_as_many(
+  raw_value: String,
+  existing_values: List(String),
+  scheme: Scheme,
+) -> OneOrMany {
+  let added_values = get_list_value(raw_value, scheme)
+  let next_values = list.append(existing_values, added_values)
+  Many(next_values)
+}
+
+fn get_list_value(raw_value: String, scheme: Scheme) -> List(String) {
+  case scheme {
+    SchemeListAsSingleValue(_, separator) -> {
+      string.split(raw_value, separator)
+    }
+    SchemeListAsMultipleValues(_) -> [raw_value]
+  }
 }
 
 /// Serialize a query
