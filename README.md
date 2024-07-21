@@ -5,7 +5,7 @@ A query string parser for Gleam.
 ## Install
 
 ```
-gleam add valid
+gleam add qs
 ```
 
 ## Usage
