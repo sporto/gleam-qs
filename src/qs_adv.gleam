@@ -5,7 +5,6 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
 import gleam/string
-import gleam/uri
 import qs
 
 pub type OneOrMany {
@@ -211,16 +210,6 @@ fn join_key_value(tuple) {
   let #(key, value) = tuple
   key <> "=" <> value
 }
-
-// fn encode_reserved(input: String) -> String {
-//   list.fold(over: reserved_chars, from: input, with: fn(input, char) {
-//     string.replace(input, char, encode(char))
-//   })
-// }
-
-// fn encode(val) {
-//   uri.percent_encode(val)
-// }
 
 pub fn empty() -> QueryAdv {
   qs.empty()
