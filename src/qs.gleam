@@ -1,6 +1,4 @@
 import gleam/dict.{type Dict}
-import gleam/float
-import gleam/int
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
@@ -29,7 +27,8 @@ pub fn parse_key_value(segment: String) -> Result(RawKeyValue, String) {
   )
 }
 
-/// Parse a query string
+/// Parse a query string.
+/// Values that cannot be parsed are ignored.
 ///
 /// ## Example
 ///
@@ -37,7 +36,13 @@ pub fn parse_key_value(segment: String) -> Result(RawKeyValue, String) {
 /// "?color=red&tags=large&tags=wool"
 /// |> qs.parse
 ///
-/// > Ok([ #("color", ["red")], #("tags", ["large", "wool"]) ] |> dict.from_list)
+/// ==
+///
+/// Ok(
+///   dict.from_list(
+///     [ #("color", ["red"]), #("tags", ["large", "wool"]) ]
+///   )
+/// )
 /// ```
 ///
 pub fn parse(qs: String) -> Result(QueryBasic, String) {
@@ -70,21 +75,17 @@ fn add_key_value(query: QueryBasic, key_value: RawKeyValue) -> QueryBasic {
   dict.upsert(in: query, update: key, with: updater)
 }
 
-// fn reverse_many(_k: String, v: OneOrMany) -> OneOrMany {
-//   case v {
-//     Many(values) -> Many(list.reverse(values))
-
-//     _ -> v
-//   }
-// }
-
 /// Serialize a query
 ///
 /// ## Example
 ///
 /// ```
-/// [ #("color", qs.One("red")), #("tags", qs.Many(["large", "wool"])) ] |> qs.serialize
-/// > "?color=red&tags[]=large&tags[]=wool"
+/// [ #("color", ["red"]), #("tag", ["large", "wool"]) ]
+/// |> qs.serialize
+///
+/// ==
+///
+/// "?color=red&tag=large&tag=wool"
 /// ```
 pub fn serialize(query: QueryBasic) -> String {
   serialize_with(query, serialize_key_value)
@@ -139,26 +140,8 @@ pub fn insert(query: Query(b), key: String, value: b) {
   dict.insert(query, key, value)
 }
 
-// pub fn push(query: Query, key: String, value: String) {
-//   div.update(in: query, update: key, with: fn(res) {
-//     case res {
-//       Some(current) ->
-//         case current {
-//           One(one) -> Many([one, value])
-
-//           Many(many) -> Many(list.append(many, [value]))
-//         }
-
-//       None -> Many([value])
-//     }
-//   })
-// }
-
-/// Adds one value to a list
-/// If the key is not a list then it will be promoted to a list
-/// If the key doesn't exist then it will be added as a list of one item
 /// Merge two Querys.
-/// If there are entries with the same keys in both maps the entry from the second query takes precedence.
+/// Second query takes precedence.
 pub fn merge(a: Query(a), b: Query(a)) {
   dict.merge(a, b)
 }

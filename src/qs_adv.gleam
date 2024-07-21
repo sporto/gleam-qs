@@ -1,7 +1,6 @@
 import gleam/dict
 import gleam/float
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
@@ -24,7 +23,13 @@ pub type QueryAdv =
 /// "?color=red&tags[]=large&tags[]=wool"
 /// |> qs.parse
 ///
-/// > Ok([ #("color", qs.One("red")), #("tags", qs.Many(["large", "wool"])) ] |> dict.from_list)
+/// ==
+///
+/// Ok(
+///   dict.from_list(
+///     [ #("color", One("red")), #("tags", Many(["large", "wool"])) ]
+///   )
+/// )
 /// ```
 ///
 pub fn parse(qs: String) -> Result(QueryAdv, String) {
@@ -74,8 +79,12 @@ fn add_key_value(query: QueryAdv, key_value: qs.RawKeyValue) -> QueryAdv {
 /// ## Example
 ///
 /// ```
-/// [ #("color", qs.One("red")), #("tags", qs.Many(["large", "wool"])) ] |> qs.serialize
-/// > "?color=red&tags[]=large&tags[]=wool"
+/// [ #("color", One("red")), #("tags", Many(["large", "wool"])) ]
+/// |> qs.serialize
+///
+/// ==
+///
+/// "?color=red&tags[]=large&tags[]=wool"
 /// ```
 pub fn serialize(query: QueryAdv) -> String {
   qs.serialize_with(query, serialize_key_value)
@@ -102,8 +111,8 @@ pub fn get(query: QueryAdv, key: String) -> Result(OneOrMany, String) {
   qs.get(query, key)
 }
 
-/// Attempt to get one value as a string
-/// If the value is a list this will fail
+/// Attempt to get one value as a String.
+/// If the value is a list this fails.
 pub fn get_as_string(query: QueryAdv, key: String) -> Result(String, String) {
   use one_or_many <- result.then(get(query, key))
 
@@ -117,15 +126,17 @@ pub fn get_as_string(query: QueryAdv, key: String) -> Result(String, String) {
   }
 }
 
-/// Attempt to get one value as a Bool
-/// If the value is a list this will fail
+/// Attempt to get one value as a Bool.
+/// If the value is a list this fails.
+/// If the value cannot be parsed to a Bool this fails.
 pub fn get_as_bool(query: QueryAdv, key: String) -> Result(Bool, String) {
   get_as_string(query, key)
   |> result.then(parse_bool)
 }
 
-/// Attempt to get one value as an Int
-/// If the value is a list this will fail
+/// Attempt to get one value as an Int.
+/// If the value is a list this fails.
+/// If the value cannot be parsed to an Int this fails.
 pub fn get_as_int(query: QueryAdv, key: String) -> Result(Int, String) {
   use value <- result.then(get_as_string(query, key))
 
@@ -137,8 +148,8 @@ pub fn get_as_int(query: QueryAdv, key: String) -> Result(Int, String) {
   )
 }
 
-/// Attempt to get one value as an Float
-/// If the value is a list this will fail
+/// Attempt to get one value as an Float.
+/// If the value is a list this fail.
 pub fn get_as_float(query: QueryAdv, key: String) -> Result(Float, String) {
   use value <- result.then(get_as_string(query, key))
 
@@ -151,13 +162,13 @@ pub fn get_as_float(query: QueryAdv, key: String) -> Result(Float, String) {
 }
 
 /// Get values from the query as a list of strings (regardless if one or many).
-/// If keys are not present this defaults to an empty list
+/// If key is not present this defaults to an empty list.
 pub fn get_as_list(query: QueryAdv, key: String) -> List(String) {
   maybe_get_as_list(query, key)
   |> result.unwrap([])
 }
 
-/// Attempt to get values as a list of Bool
+/// Attempt to get values as a list of Bool.
 pub fn get_as_list_of_bool(
   query: QueryAdv,
   key: String,
@@ -167,7 +178,7 @@ pub fn get_as_list_of_bool(
   |> result.all
 }
 
-/// Attempt to get values as a list of Int
+/// Attempt to get values as a list of Int.
 pub fn get_as_list_of_int(
   query: QueryAdv,
   key: String,
@@ -178,7 +189,7 @@ pub fn get_as_list_of_int(
   |> result.replace_error("Couldn't parse all values")
 }
 
-/// Attempt to get values as a list of Float
+/// Attempt to get values as a list of Float.
 pub fn get_as_list_of_float(
   query: QueryAdv,
   key: String,
@@ -189,7 +200,8 @@ pub fn get_as_list_of_float(
   |> result.replace_error("Couldn't parse all values")
 }
 
-// Get values from the query as a list of strings. If key is not present this returns an Error.
+/// Get values from the query as a list of strings.
+/// If key is not present this returns an Error.
 pub fn maybe_get_as_list(
   query: QueryAdv,
   key: String,
@@ -198,21 +210,22 @@ pub fn maybe_get_as_list(
   |> result.map(to_list)
 }
 
-/// Tell if the query has the given key
+/// Tell if the query has the given key.
 pub fn has_key(query: QueryAdv, key: String) -> Bool {
   qs.has_key(query, key)
 }
 
+/// Insert value.
 pub fn insert(query: QueryAdv, key: String, value: OneOrMany) {
   qs.insert(query, key, value)
 }
 
-/// Set a unique value in the query
+/// Set a unique value in the query.
 pub fn insert_one(query: QueryAdv, key: String, value: String) {
   insert(query, key, One(value))
 }
 
-/// Set a list of values in the query
+/// Set a list of values in the query.
 pub fn insert_list(query: QueryAdv, key: String, values: List(String)) {
   insert(query, key, Many(values))
 }

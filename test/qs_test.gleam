@@ -47,6 +47,7 @@ fn test_serialize(input, expected) {
 pub fn serialize_test() {
   test_serialize([#("a", ["1"])], "?a=1")
   test_serialize([#("a", ["1"]), #("b", ["2"])], "?a=1&b=2")
+  test_serialize([#("a", ["1", "2"])], "?a=1&a=2")
   test_serialize([#("b[", ["2", "3"])], "?b%5B=2&b%5B=3")
   test_serialize([#("b", ["2|3"])], "?b=2%7C3")
 }
