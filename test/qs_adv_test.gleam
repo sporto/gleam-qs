@@ -14,36 +14,36 @@ import qs_adv.{Many, One}
 //   |> should.equal(Ok(#("a", "x", True)))
 // }
 
-fn test_parse_ok(input: String, expected) {
+fn test_default_parse_ok(input: String, expected) {
   input
-  |> qs_adv.parse
+  |> qs_adv.default_parse
   |> should.equal(Ok(
     expected
     |> dict.from_list,
   ))
 }
 
-pub fn parse_test() {
-  test_parse_ok("?a=1", [#("a", One("1"))])
+pub fn default_parse_test() {
+  test_default_parse_ok("?a=1", [#("a", One("1"))])
 
   // It can parse two values
-  test_parse_ok("?a=1&b=2", [#("a", One("1")), #("b", One("2"))])
+  test_default_parse_ok("?a=1&b=2", [#("a", One("1")), #("b", One("2"))])
 
   // It can parse a list
   // And the list is in the given order
-  test_parse_ok("?a[]=1&a[]=2", [#("a", Many(["1", "2"]))])
+  test_default_parse_ok("?a[]=1&a[]=2", [#("a", Many(["1", "2"]))])
 
   // A single value gets replaced with a list value
-  test_parse_ok("?a=1&a[]=2", [#("a", Many(["2"]))])
+  test_default_parse_ok("?a=1&a[]=2", [#("a", Many(["2"]))])
 
   // A list value gets replaced with a single value
-  test_parse_ok("?a[]=1&a=2", [#("a", One("2"))])
+  test_default_parse_ok("?a[]=1&a=2", [#("a", One("2"))])
   // Empty value
-  test_parse_ok("?a[]", [])
+  test_default_parse_ok("?a[]", [])
 }
 
 pub fn decode_when_parsing_test() {
-  test_parse_ok("?a=100%25%20great", [#("a", One("100% great"))])
+  test_default_parse_ok("?a=100%25%20great", [#("a", One("100% great"))])
 }
 
 fn test_serialize(input, expected) {

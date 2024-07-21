@@ -15,13 +15,21 @@ pub type OneOrMany {
 pub type QueryAdv =
   qs.Query(OneOrMany)
 
+pub type Config {
+  Config(fail_on_invalid: Bool)
+}
+
+pub type ParseInput {
+  ParseInput(query: String, config: Config)
+}
+
 /// Parse a query string
 ///
 /// ## Example
 ///
 /// ```
 /// "?color=red&tags[]=large&tags[]=wool"
-/// |> qs.parse
+/// |> qs.default_parse
 ///
 /// ==
 ///
@@ -32,8 +40,24 @@ pub type QueryAdv =
 /// )
 /// ```
 ///
-pub fn parse(qs: String) -> Result(QueryAdv, String) {
-  use key_values <- result.then(qs.split_and_parse(qs, False))
+pub fn default_parse(qs: String) -> Result(QueryAdv, String) {
+  parse_input(qs)
+  |> parse
+}
+
+pub fn parse_input(query: String) -> ParseInput {
+  ParseInput(query: query, config: Config(fail_on_invalid: False))
+}
+
+pub fn with_fail_on_invalid(input: ParseInput, value: Bool) -> ParseInput {
+  ParseInput(..input, config: Config(..input.config, fail_on_invalid: value))
+}
+
+pub fn parse(input: ParseInput) -> Result(QueryAdv, String) {
+  use key_values <- result.then(qs.split_and_parse(
+    input.query,
+    input.config.fail_on_invalid,
+  ))
 
   list.fold(over: key_values, from: empty(), with: add_key_value)
   |> Ok
