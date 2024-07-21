@@ -1,4 +1,4 @@
-name = "gleam_qs"
+name = "qs"
 version = "0.5.0"
 
 description = "Parse and encode URL query strings"
