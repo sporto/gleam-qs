@@ -16,12 +16,12 @@ pub type QueryAdv =
   qs.Query(OneOrMany)
 
 pub type Scheme {
-  SchemeMultipleValues(list_suffix: String)
-  SchemeSingleValue(list_suffix: String, separator: String)
+  SchemeListAsMultipleValues(list_suffix: String)
+  SchemeListAsSingleValue(list_suffix: String, separator: String)
 }
 
 pub fn scheme_rails_like() -> Scheme {
-  SchemeMultipleValues(list_suffix: "[]")
+  SchemeListAsMultipleValues(list_suffix: "[]")
 }
 
 pub type Config {
@@ -72,7 +72,11 @@ pub fn with_fail_on_invalid(input: ParseInput, value: Bool) -> ParseInput {
 }
 
 pub fn with_scheme(input: ParseInput, scheme: Scheme) -> ParseInput {
-  ParseInput(..input, config: Config(..input.config, scheme: scheme))
+  ParseInput(..input, config: config_with_scheme(input.config, scheme))
+}
+
+pub fn config_with_scheme(config: Config, scheme: Scheme) -> Config {
+  Config(..config, scheme: scheme)
 }
 
 pub fn parse(input: ParseInput) -> Result(QueryAdv, String) {
@@ -100,6 +104,17 @@ fn add_key_value(
     False -> #(False, raw_key)
   }
 
+  let set_many = fn(given_raw_value, existing_values) {
+    let added_values = case scheme {
+      SchemeListAsSingleValue(_, separator) -> {
+        string.split(given_raw_value, separator)
+      }
+      SchemeListAsMultipleValues(_) -> [given_raw_value]
+    }
+    let next_values = list.append(existing_values, added_values)
+    Many(next_values)
+  }
+
   let updater = fn(res) {
     case res {
       Some(existing) ->
@@ -107,17 +122,14 @@ fn add_key_value(
         case is_list {
           True ->
             case existing {
-              One(_) -> Many([raw_value])
-              Many(existing_list) ->
-                Many(list.append(existing_list, [raw_value]))
+              One(_) -> set_many(raw_value, [])
+              Many(existing_values) -> set_many(raw_value, existing_values)
             }
-
           False -> One(raw_value)
         }
-
       None ->
         case is_list {
-          True -> Many([raw_value])
+          True -> set_many(raw_value, [])
           False -> One(raw_value)
         }
     }

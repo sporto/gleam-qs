@@ -87,6 +87,18 @@ Ok(
 
 But this is configurable.
 
+```gleam
+let scheme = qs_adv.SchemeListAsSingleValue(
+  list_suffix: "[]",
+  separator: "|"
+)
+
+"?color=red&pets[]=cat|dog"
+  |> qs_adv.parse_input
+  |> qs_adv.with_scheme(scheme)
+  |> qs_adv.parse
+```
+
 ### Advanced serialization
 
 ```gleam

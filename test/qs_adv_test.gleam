@@ -1,22 +1,22 @@
 import gleam/dict
 import gleeunit/should
-import qs_adv.{Many, One}
+import qs_adv.{Many, One} as qsa
 
 // pub fn parse_key_value_test() {
 //   let segment = "a=x"
 
-//   qs_adv.parse_key_value(segment)
+//   qsa.parse_key_value(segment)
 //   |> should.equal(Ok(#("a", "x", False)))
 
 //   let segment2 = "a[]=x"
 
-//   qs_adv.parse_key_value(segment2)
+//   qsa.parse_key_value(segment2)
 //   |> should.equal(Ok(#("a", "x", True)))
 // }
 
 fn test_default_parse_ok(input: String, expected) {
   input
-  |> qs_adv.default_parse
+  |> qsa.default_parse
   |> should.equal(Ok(
     expected
     |> dict.from_list,
@@ -46,10 +46,33 @@ pub fn decode_when_parsing_test() {
   test_default_parse_ok("?a=100%25%20great", [#("a", One("100% great"))])
 }
 
+fn test_schema_parse_ok(
+  input: String,
+  scheme: qsa.Scheme,
+  expected: List(#(String, qsa.OneOrMany)),
+) {
+  input
+  |> qsa.parse_input
+  |> qsa.with_scheme(scheme)
+  |> qsa.parse
+  |> should.equal(Ok(
+    expected
+    |> dict.from_list,
+  ))
+}
+
+pub fn parse_scheme_joined_test() {
+  test_schema_parse_ok(
+    "?pets[]=cat|dog",
+    qsa.SchemeListAsSingleValue(list_suffix: "[]", separator: "|"),
+    [#("pets", Many(["cat", "dog"]))],
+  )
+}
+
 fn test_default_serialize(input, expected) {
   input
   |> dict.from_list
-  |> qs_adv.default_serialize
+  |> qsa.default_serialize
   |> should.equal(expected)
 }
 
@@ -71,89 +94,89 @@ pub fn encode_when_serializing_test() {
 pub fn get_as_string_test() {
   []
   |> dict.from_list
-  |> qs_adv.get_as_string("a")
+  |> qsa.get_as_string("a")
   |> should.equal(Error("Invalid key a"))
 
   [#("a", One("1"))]
   |> dict.from_list
-  |> qs_adv.get_as_string("a")
+  |> qsa.get_as_string("a")
   |> should.equal(Ok("1"))
 
   [#("a", Many([]))]
   |> dict.from_list
-  |> qs_adv.get_as_string("a")
+  |> qsa.get_as_string("a")
   |> should.equal(Error("a is a list"))
 }
 
 pub fn get_as_bool_test() {
   [#("a", One("true"))]
   |> dict.from_list
-  |> qs_adv.get_as_bool("a")
+  |> qsa.get_as_bool("a")
   |> should.equal(Ok(True))
 }
 
 pub fn get_as_int_test() {
   [#("a", One("2"))]
   |> dict.from_list
-  |> qs_adv.get_as_int("a")
+  |> qsa.get_as_int("a")
   |> should.equal(Ok(2))
 }
 
 pub fn get_as_float_test() {
   [#("a", One("2.1"))]
   |> dict.from_list
-  |> qs_adv.get_as_float("a")
+  |> qsa.get_as_float("a")
   |> should.equal(Ok(2.1))
 }
 
 pub fn get_as_list_test() {
   [#("a", One("1"))]
   |> dict.from_list
-  |> qs_adv.get_as_list("a")
+  |> qsa.get_as_list("a")
   |> should.equal(["1"])
 
   [#("a", Many(["1", "2"]))]
   |> dict.from_list
-  |> qs_adv.get_as_list("a")
+  |> qsa.get_as_list("a")
   |> should.equal(["1", "2"])
 }
 
 pub fn get_as_list_of_bool_test() {
   [#("a", One("true"))]
   |> dict.from_list
-  |> qs_adv.get_as_list_of_bool("a")
+  |> qsa.get_as_list_of_bool("a")
   |> should.equal(Ok([True]))
 }
 
 pub fn get_as_list_of_int_test() {
   [#("a", One("1"))]
   |> dict.from_list
-  |> qs_adv.get_as_list_of_int("a")
+  |> qsa.get_as_list_of_int("a")
   |> should.equal(Ok([1]))
 }
 
 pub fn get_as_list_of_float_test() {
   [#("a", One("1.1"))]
   |> dict.from_list
-  |> qs_adv.get_as_list_of_float("a")
+  |> qsa.get_as_list_of_float("a")
   |> should.equal(Ok([1.1]))
 }
 // pub fn push_test() {
 //   []
 //   |> dict.from_list
-//   |> qs_adv.push("a", "1")
+//   |> qsa.push("a", "1")
 //   |> dict.to_list
 //   |> should.equal([#("a", Many(["1"]))])
 
 //   [#("a", One("1"))]
 //   |> dict.from_list
-//   |> qs_adv.push("a", "2")
+//   |> qsa.push("a", "2")
 //   |> dict.to_list
 //   |> should.equal([#("a", Many(["1", "2"]))])
 
 //   [#("a", Many(["1"]))]
 //   |> dict.from_list
-//   |> qs_adv.push("a", "2")
+//   |> qsa.push("a", "2")
 //   |> dict.to_list
 //   |> should.equal([#("a", Many(["1", "2"]))])
 // }
