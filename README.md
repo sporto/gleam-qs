@@ -57,7 +57,7 @@ let query = [
   ]
   |> dict.from_list
 
-qs.serialize(query)
+qs.default_serialize(query)
 
 > "?color=red&pet=cat&pet=dog"
 ```
@@ -93,10 +93,11 @@ let scheme = qs_adv.SchemeListAsSingleValue(
   separator: "|"
 )
 
-"?color=red&pets[]=cat|dog"
-  |> qs_adv.parse_input
+let config = qs_adv.default_config()
   |> qs_adv.with_scheme(scheme)
-  |> qs_adv.parse
+
+"?color=red&pets[]=cat|dog"
+  |> qs_adv.parse(config)
 ```
 
 ### Advanced serialization

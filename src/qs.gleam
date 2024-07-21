@@ -109,13 +109,13 @@ fn add_key_value(query: QueryBasic, key_value: RawKeyValue) -> QueryBasic {
 ///
 /// ```
 /// [ #("color", ["red"]), #("tag", ["large", "wool"]) ]
-/// |> qs.serialize
+/// |> qs.default_serialize
 ///
 /// ==
 ///
 /// "?color=red&tag=large&tag=wool"
 /// ```
-pub fn serialize(query: QueryBasic) -> String {
+pub fn default_serialize(query: QueryBasic) -> String {
   query
   |> dict.to_list
   |> list.flat_map(serialize_key_value)
