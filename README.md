@@ -1,4 +1,4 @@
-# gleam_qs
+# Gleam QS
 
 A query string parser for Gleam.
 
@@ -12,9 +12,17 @@ gleam add valid
 
 QS has two modules `qs` (Basic) and `qs_adv` (Advance).
 
-A query in basic is a `Dict(String, List(String))`.
+### Basic
+
+A query `(QueryBasic)` in basic is a `Dict(String, List(String))`.
 
 Basic has not concept of single or list values. Every value is a `List(String)`.
+
+### Advanced
+
+The Advance module provides configuration to explicitly define how single and list values are serialized.
+
+A query `(QueryAdv)` is a `Dict(String, OneOrMany)`.
 
 ### Basic parsing
 
@@ -23,13 +31,16 @@ import qs
 import gleam/dict
 
 "?color=red&pet=cat&pet=dog"
-|> qs.parse
+|> qs.default_parse
 
 ==
 
 Ok(
   dict.from_list(
-    [ #("color", ["red"]), #("pet", ["cat", "dog"]) ] )
+    [
+      #("color", ["red"]),
+      #("pet", ["cat", "dog"]),
+    ]
   )
 )
 ```
@@ -44,7 +55,7 @@ let query = [
     #("color", ["red"]),
     #("pet", ["cat", "dog"])
   ]
-  |> map.from_list
+  |> dict.from_list
 
 qs.serialize(query)
 

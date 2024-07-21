@@ -11,20 +11,37 @@ pub type Query(v) =
 pub type QueryBasic =
   Query(List(String))
 
+pub type Config {
+  Config(fail_on_invalid: Bool)
+}
+
+pub type ParseInput {
+  ParseInput(query: String, config: Config)
+}
+
 @internal
 pub type RawKeyValue =
   #(String, String)
 
 @internal
 pub fn parse_key_value(segment: String) -> Result(RawKeyValue, String) {
-  segment
-  |> uri.percent_decode
-  |> result.unwrap(segment)
-  |> string.split_once(on: "=")
-  |> result.replace_error(
-    "Unable to parse "
-    |> string.append(segment),
-  )
+  let decoded =
+    segment
+    |> uri.percent_decode
+    |> result.unwrap(segment)
+
+  let split_result = string.split_once(decoded, on: "=")
+  let unabled_to_parse = "Unable to parse " <> segment
+
+  case split_result {
+    Ok(#(key, value)) -> {
+      case value {
+        "" -> Error(unabled_to_parse)
+        _ -> Ok(#(key, value))
+      }
+    }
+    Error(_) -> Error(unabled_to_parse)
+  }
 }
 
 /// Parse a query string.
@@ -34,7 +51,7 @@ pub fn parse_key_value(segment: String) -> Result(RawKeyValue, String) {
 ///
 /// ```
 /// "?color=red&tags=large&tags=wool"
-/// |> qs.parse
+/// |> qs.default_parse
 ///
 /// ==
 ///
@@ -45,21 +62,44 @@ pub fn parse_key_value(segment: String) -> Result(RawKeyValue, String) {
 /// )
 /// ```
 ///
-pub fn parse(qs: String) -> Result(QueryBasic, String) {
-  use key_values <- result.then(split_and_parse(qs))
+pub fn default_parse(qs: String) -> Result(QueryBasic, String) {
+  parse_input(qs)
+  |> parse
+}
+
+pub fn parse_input(query: String) -> ParseInput {
+  ParseInput(query: query, config: Config(fail_on_invalid: False))
+}
+
+pub fn with_fail_on_invalid(input: ParseInput, value: Bool) -> ParseInput {
+  ParseInput(..input, config: Config(..input.config, fail_on_invalid: value))
+}
+
+pub fn parse(input: ParseInput) -> Result(QueryBasic, String) {
+  use key_values <- result.then(split_and_parse(
+    input.query,
+    input.config.fail_on_invalid,
+  ))
 
   list.fold(over: key_values, from: empty(), with: add_key_value)
   |> Ok
 }
 
 @internal
-pub fn split_and_parse(qs: String) -> Result(List(RawKeyValue), String) {
-  qs
-  |> string.replace("?", "")
-  |> string.split(on: "&")
-  |> list.map(parse_key_value)
-  |> result.values
-  |> Ok
+pub fn split_and_parse(query: String, fail_on_invalid: Bool) -> Result(
+  List(RawKeyValue),
+  String,
+) {
+  let results =
+    query
+    |> string.replace("?", "")
+    |> string.split(on: "&")
+    |> list.map(parse_key_value)
+
+  case fail_on_invalid {
+    True -> results |> result.all
+    False -> results |> result.values |> Ok
+  }
 }
 
 fn add_key_value(query: QueryBasic, key_value: RawKeyValue) -> QueryBasic {

@@ -1,5 +1,9 @@
 # Changelog
 
+### 0.6.0
+
+- Rename `parse` to `default_parse`
+
 ### 0.5.0
 
 - Renamed the library to `qs`

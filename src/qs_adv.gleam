@@ -33,7 +33,7 @@ pub type QueryAdv =
 /// ```
 ///
 pub fn parse(qs: String) -> Result(QueryAdv, String) {
-  use key_values <- result.then(qs.split_and_parse(qs))
+  use key_values <- result.then(qs.split_and_parse(qs, False))
 
   list.fold(over: key_values, from: empty(), with: add_key_value)
   |> Ok
