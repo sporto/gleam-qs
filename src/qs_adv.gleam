@@ -5,11 +5,22 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
 import gleam/string
+import gleam/uri
 import qs
 
 pub type OneOrMany {
   One(String)
   Many(List(String))
+}
+
+fn map_one_or_many(
+  one_or_many: OneOrMany,
+  mapper: fn(String) -> String,
+) -> OneOrMany {
+  case one_or_many {
+    One(value) -> One(mapper(value))
+    Many(values) -> Many(list.map(values, mapper))
+  }
 }
 
 pub type QueryAdv =
@@ -32,8 +43,8 @@ pub fn default_config() -> Config {
   Config(fail_on_invalid: False, scheme: scheme_rails_like())
 }
 
-pub type ParseInput {
-  ParseInput(query: String, config: Config)
+pub fn with_scheme(config: Config, scheme: Scheme) -> Config {
+  Config(..config, scheme: scheme)
 }
 
 /// Parse a query string
@@ -54,39 +65,17 @@ pub type ParseInput {
 /// ```
 ///
 pub fn default_parse(qs: String) -> Result(QueryAdv, String) {
-  parse_input(qs)
-  |> parse
+  parse(qs, default_config())
 }
 
-pub fn parse_input(query: String) -> ParseInput {
-  ParseInput(query: query, config: default_config())
-}
-
-/// Replace the configuration on ParseInput
-pub fn with_config(input: ParseInput, config: Config) -> ParseInput {
-  ParseInput(..input, config: config)
-}
-
-pub fn with_fail_on_invalid(input: ParseInput, value: Bool) -> ParseInput {
-  ParseInput(..input, config: Config(..input.config, fail_on_invalid: value))
-}
-
-pub fn with_scheme(input: ParseInput, scheme: Scheme) -> ParseInput {
-  ParseInput(..input, config: config_with_scheme(input.config, scheme))
-}
-
-pub fn config_with_scheme(config: Config, scheme: Scheme) -> Config {
-  Config(..config, scheme: scheme)
-}
-
-pub fn parse(input: ParseInput) -> Result(QueryAdv, String) {
+pub fn parse(input: String, config: Config) -> Result(QueryAdv, String) {
   use key_values <- result.then(qs.split_and_parse(
-    input.query,
-    input.config.fail_on_invalid,
+    input,
+    config.fail_on_invalid,
   ))
 
   list.fold(over: key_values, from: empty(), with: fn(query, key_value) {
-    add_key_value(input.config.scheme, query, key_value)
+    add_key_value(config.scheme, query, key_value)
   })
   |> Ok
 }
@@ -156,18 +145,57 @@ fn get_list_value(raw_value: String, scheme: Scheme) -> List(String) {
 /// "?color=red&tags[]=large&tags[]=wool"
 /// ```
 pub fn default_serialize(query: QueryAdv) -> String {
-  qs.serialize_with(query, serialize_key_value)
+  serialize(query, default_config())
 }
 
-fn serialize_key_value(key_value: #(String, OneOrMany)) -> List(String) {
+pub fn serialize(input: QueryAdv, config: Config) -> String {
+  input
+  |> dict.to_list
+  |> list.flat_map(fn(key_value) {
+    serialize_key_value(key_value, config.scheme)
+  })
+  |> string.join("&")
+  |> qs.add_question_mark
+}
+
+fn serialize_key_value(
+  key_value: #(String, OneOrMany),
+  scheme: Scheme,
+) -> List(String) {
   let #(key, one_or_many) = key_value
+  let key_encoded = uri.percent_encode(key)
+  let encoded_one_or_many = map_one_or_many(one_or_many, uri.percent_encode)
 
+  let unfolded = unfold_key_value(key_encoded, encoded_one_or_many, scheme)
+
+  list.map(unfolded, fn(tuple) {
+    let #(key, value) = tuple
+    key <> "=" <> value
+  })
+}
+
+fn unfold_key_value(
+  key: String,
+  one_or_many: OneOrMany,
+  scheme: Scheme,
+) -> List(qs.RawKeyValue) {
   case one_or_many {
-    One(value) -> [qs.join_key_value(key, value, "=")]
+    One(value) -> [#(key, value)]
+    Many(values) -> unfold_key_value_many(key, values, scheme)
+  }
+}
 
-    Many(values) -> {
-      values
-      |> list.map(qs.join_key_value(key, _, "[]="))
+fn unfold_key_value_many(
+  key: String,
+  values: List(String),
+  scheme: Scheme,
+) -> List(qs.RawKeyValue) {
+  case scheme {
+    SchemeListAsSingleValue(suffix, separator) -> {
+      [#(key <> suffix, string.join(values, separator))]
+    }
+    SchemeListAsMultipleValues(suffix) -> {
+      list.map(values, fn(value) { #(key <> suffix, value) })
     }
   }
 }

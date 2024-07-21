@@ -2,18 +2,6 @@ import gleam/dict
 import gleeunit/should
 import qs_adv.{Many, One} as qsa
 
-// pub fn parse_key_value_test() {
-//   let segment = "a=x"
-
-//   qsa.parse_key_value(segment)
-//   |> should.equal(Ok(#("a", "x", False)))
-
-//   let segment2 = "a[]=x"
-
-//   qsa.parse_key_value(segment2)
-//   |> should.equal(Ok(#("a", "x", True)))
-// }
-
 fn test_default_parse_ok(input: String, expected) {
   input
   |> qsa.default_parse
@@ -51,10 +39,12 @@ fn test_schema_parse_ok(
   scheme: qsa.Scheme,
   expected: List(#(String, qsa.OneOrMany)),
 ) {
+  let config =
+    qsa.default_config()
+    |> qsa.with_scheme(scheme)
+
   input
-  |> qsa.parse_input
-  |> qsa.with_scheme(scheme)
-  |> qsa.parse
+  |> qsa.parse(config)
   |> should.equal(Ok(
     expected
     |> dict.from_list,
@@ -66,6 +56,27 @@ pub fn parse_scheme_joined_test() {
     "?pets[]=cat|dog",
     qsa.SchemeListAsSingleValue(list_suffix: "[]", separator: "|"),
     [#("pets", Many(["cat", "dog"]))],
+  )
+
+  // Suffix is missing
+  test_schema_parse_ok(
+    "?pets=cat|dog",
+    qsa.SchemeListAsSingleValue(list_suffix: "[]", separator: "|"),
+    [#("pets", One("cat|dog"))],
+  )
+
+  // No suffix, everything is a list
+  test_schema_parse_ok(
+    "?pets=cat|dog",
+    qsa.SchemeListAsSingleValue(list_suffix: "", separator: "|"),
+    [#("pets", Many(["cat", "dog"]))],
+  )
+
+  // No separator
+  test_schema_parse_ok(
+    "?pets[]=cat",
+    qsa.SchemeListAsSingleValue(list_suffix: "[]", separator: ""),
+    [#("pets", Many(["c", "a", "t"]))],
   )
 }
 
@@ -89,6 +100,20 @@ pub fn default_serialize_test() {
 
 pub fn encode_when_serializing_test() {
   test_default_serialize([#("a", One("100% great"))], "?a=100%25%20great")
+}
+
+pub fn serialize_with_scheme_test() {
+  let config =
+    qsa.default_config()
+    |> qsa.with_scheme(qsa.SchemeListAsSingleValue(
+      list_suffix: "[]",
+      separator: "|",
+    ))
+
+  [#("pets", Many(["cat", "dog"]))]
+  |> dict.from_list
+  |> qsa.serialize(config)
+  |> should.equal("?pets[]=cat|dog")
 }
 
 pub fn get_as_string_test() {

@@ -19,10 +19,6 @@ pub fn default_config() -> Config {
   Config(fail_on_invalid: False)
 }
 
-pub type ParseInput {
-  ParseInput(query: String, config: Config)
-}
-
 @internal
 pub type RawKeyValue =
   #(String, String)
@@ -67,23 +63,11 @@ pub fn parse_key_value(segment: String) -> Result(RawKeyValue, String) {
 /// ```
 ///
 pub fn default_parse(qs: String) -> Result(QueryBasic, String) {
-  parse_input(qs)
-  |> parse
+  parse(qs, default_config())
 }
 
-pub fn parse_input(query: String) -> ParseInput {
-  ParseInput(query: query, config: default_config())
-}
-
-pub fn with_fail_on_invalid(input: ParseInput, value: Bool) -> ParseInput {
-  ParseInput(..input, config: Config(..input.config, fail_on_invalid: value))
-}
-
-pub fn parse(input: ParseInput) -> Result(QueryBasic, String) {
-  use key_values <- result.then(split_and_parse(
-    input.query,
-    input.config.fail_on_invalid,
-  ))
+pub fn parse(input: String, config: Config) -> Result(QueryBasic, String) {
+  use key_values <- result.then(split_and_parse(input, config.fail_on_invalid))
 
   list.fold(over: key_values, from: empty(), with: add_key_value)
   |> Ok
@@ -132,12 +116,6 @@ fn add_key_value(query: QueryBasic, key_value: RawKeyValue) -> QueryBasic {
 /// "?color=red&tag=large&tag=wool"
 /// ```
 pub fn serialize(query: QueryBasic) -> String {
-  serialize_with(query, serialize_key_value)
-}
-
-@internal
-pub fn serialize_with(query: Query(v), serialize_key_value: fn(#(String, v)) ->
-  List(String)) -> String {
   query
   |> dict.to_list
   |> list.flat_map(serialize_key_value)
@@ -147,17 +125,14 @@ pub fn serialize_with(query: Query(v), serialize_key_value: fn(#(String, v)) ->
 
 fn serialize_key_value(key_value: #(String, List(String))) -> List(String) {
   let #(key, values) = key_value
-  list.map(values, fn(value) { join_key_value(key, value, "=") })
+  list.map(values, fn(value) {
+    uri.percent_encode(key) <> "=" <> uri.percent_encode(value)
+  })
 }
 
 @internal
-pub fn join_key_value(key: String, value: String, join: String) -> String {
-  uri.percent_encode(key) <> join <> uri.percent_encode(value)
-}
-
-fn add_question_mark(query: String) -> String {
-  "?"
-  |> string.append(query)
+pub fn add_question_mark(query: String) -> String {
+  "?" <> query
 }
 
 /// Make an empty Query
