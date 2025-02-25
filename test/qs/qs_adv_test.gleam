@@ -1,6 +1,6 @@
 import gleam/dict
 import gleeunit/should
-import qs_adv.{Many, One} as qsa
+import qs/qs_adv.{Many, One} as qsa
 
 fn config_compressed() {
   let scheme = qsa.SchemeListAsSingleValue(list_suffix: "[]", separator: "|")

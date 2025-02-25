@@ -2,7 +2,7 @@
 
 ### 1.0.0
 
-- No changes
+- Move modules
 
 ### 0.6.0
 
