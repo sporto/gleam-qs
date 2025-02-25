@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.0.0
+
+- No changes
+
 ### 0.6.0
 
 - Rename `parse` to `default_parse`
