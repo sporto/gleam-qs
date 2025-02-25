@@ -67,7 +67,7 @@ qs.default_serialize(query)
 By default advanced uses a Rails like query scheme. E.g.
 
 ```gleam
-import qs_adv
+import qs/qs_adv
 import gleam/dict
 
 "?color=red&pets[]=cat&pets[]=dog"
@@ -103,7 +103,7 @@ let config = qs_adv.default_config()
 ### Advanced serialization
 
 ```gleam
-import qs_adv
+import qs/qs_adv
 import gleam/dict
 
 let query = [
