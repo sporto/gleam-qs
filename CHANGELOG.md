@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.0.1
+
+- Allow using Gleam standard library v1
+
 ### 1.0.0
 
 - Move modules
