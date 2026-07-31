@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.0.2
+
+- Change `result.then` to `result.try` (update stdlib)
+
 ### 1.0.1
 
 - Allow using Gleam standard library v1

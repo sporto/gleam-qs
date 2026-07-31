@@ -68,10 +68,7 @@ pub fn default_parse(qs: String) -> Result(QueryAdv, String) {
 }
 
 pub fn parse(input: String, config: Config) -> Result(QueryAdv, String) {
-  use key_values <- result.then(qs.split_and_parse(
-    input,
-    config.fail_on_invalid,
-  ))
+  use key_values <- result.try(qs.split_and_parse(input, config.fail_on_invalid))
 
   list.fold(over: key_values, from: empty(), with: fn(query, key_value) {
     add_key_value(config.scheme, query, key_value)
@@ -222,7 +219,7 @@ pub fn get(query: QueryAdv, key: String) -> Result(OneOrMany, String) {
 /// Attempt to get one value as a String.
 /// If the value is a list this fails.
 pub fn get_as_string(query: QueryAdv, key: String) -> Result(String, String) {
-  use one_or_many <- result.then(get(query, key))
+  use one_or_many <- result.try(get(query, key))
 
   case one_or_many {
     One(value) -> Ok(value)
@@ -239,14 +236,14 @@ pub fn get_as_string(query: QueryAdv, key: String) -> Result(String, String) {
 /// If the value cannot be parsed to a Bool this fails.
 pub fn get_as_bool(query: QueryAdv, key: String) -> Result(Bool, String) {
   get_as_string(query, key)
-  |> result.then(parse_bool)
+  |> result.try(parse_bool)
 }
 
 /// Attempt to get one value as an Int.
 /// If the value is a list this fails.
 /// If the value cannot be parsed to an Int this fails.
 pub fn get_as_int(query: QueryAdv, key: String) -> Result(Int, String) {
-  use value <- result.then(get_as_string(query, key))
+  use value <- result.try(get_as_string(query, key))
 
   value
   |> int.parse
@@ -259,7 +256,7 @@ pub fn get_as_int(query: QueryAdv, key: String) -> Result(Int, String) {
 /// Attempt to get one value as an Float.
 /// If the value is a list this fail.
 pub fn get_as_float(query: QueryAdv, key: String) -> Result(Float, String) {
-  use value <- result.then(get_as_string(query, key))
+  use value <- result.try(get_as_string(query, key))
 
   value
   |> float.parse

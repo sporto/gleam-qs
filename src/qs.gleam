@@ -74,17 +74,17 @@ pub fn default_parse(qs: String) -> Result(QueryBasic, String) {
 }
 
 pub fn parse(input: String, config: Config) -> Result(QueryBasic, String) {
-  use key_values <- result.then(split_and_parse(input, config.fail_on_invalid))
+  use key_values <- result.try(split_and_parse(input, config.fail_on_invalid))
 
   list.fold(over: key_values, from: empty(), with: add_key_value)
   |> Ok
 }
 
 @internal
-pub fn split_and_parse(query: String, fail_on_invalid: Bool) -> Result(
-  List(RawKeyValue),
-  String,
-) {
+pub fn split_and_parse(
+  query: String,
+  fail_on_invalid: Bool,
+) -> Result(List(RawKeyValue), String) {
   let results =
     query
     |> string.replace("?", "")
